@@ -1,0 +1,15 @@
+{
+  "name": "tally",
+  "version": "1.0.0",
+  "description": "Identity & vote-based habit tracker landing page",
+  "scripts": {
+    "dev": "vite client --open",
+    "preview": "vite preview client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^8.1.3"
+  }
+}

@@ -1,0 +1,167 @@
+/* ===========================
+   animations.css — Motion System
+   =========================== */
+
+/* ==========================================
+   TALLY MARK SVG DRAW ANIMATION
+   ========================================== */
+.tally-svg .tally-stroke {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawStroke 0.4s var(--ease-out) forwards;
+}
+
+.tally-svg .tally-stroke:nth-child(1)  { animation-delay: 0.1s; }
+.tally-svg .tally-stroke:nth-child(2)  { animation-delay: 0.3s; }
+.tally-svg .tally-stroke:nth-child(3)  { animation-delay: 0.5s; }
+.tally-svg .tally-stroke:nth-child(4)  { animation-delay: 0.7s; }
+.tally-svg .tally-stroke:nth-child(5)  { animation-delay: 0.9s; }
+.tally-svg .tally-stroke:nth-child(6)  { animation-delay: 1.3s; }
+.tally-svg .tally-stroke:nth-child(7)  { animation-delay: 1.5s; }
+.tally-svg .tally-stroke:nth-child(8)  { animation-delay: 1.7s; }
+.tally-svg .tally-stroke:nth-child(9)  { animation-delay: 1.9s; }
+.tally-svg .tally-stroke:nth-child(10) { animation-delay: 2.1s; }
+.tally-svg .tally-stroke:nth-child(11) { animation-delay: 2.5s; }
+.tally-svg .tally-stroke:nth-child(12) { animation-delay: 2.7s; }
+.tally-svg .tally-stroke:nth-child(13) { animation-delay: 2.9s; }
+
+@keyframes drawStroke {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Delayed count number appearance */
+.tally-count-animate {
+  opacity: 0;
+  animation: fadeUp 0.5s var(--ease-out) 3.2s forwards;
+}
+
+/* ==========================================
+   HERO FADE-IN
+   ========================================== */
+.hero-text-animate > * {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp var(--duration-slow) var(--ease-out) forwards;
+}
+
+.hero-text-animate > *:nth-child(1) { animation-delay: 0.05s; }
+.hero-text-animate > *:nth-child(2) { animation-delay: 0.15s; }
+.hero-text-animate > *:nth-child(3) { animation-delay: 0.25s; }
+.hero-text-animate > *:nth-child(4) { animation-delay: 0.35s; }
+.hero-text-animate > *:nth-child(5) { animation-delay: 0.45s; }
+
+.hero-visual-animate {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.6s var(--ease-out) 0.3s forwards;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================
+   SCROLL-DRIVEN ENTRY ANIMATIONS
+   Spec: Use CSS scroll-driven animations with
+   IntersectionObserver fallback for Firefox.
+   ========================================== */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* Native scroll-driven support (Chrome 115+, Edge 115+, Safari 26+) */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    .reveal {
+      animation: revealEntry auto linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+
+    @keyframes revealEntry {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+/* JS-powered IntersectionObserver fallback — applied by main.js */
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.55s var(--ease-out),
+    transform 0.55s var(--ease-out);
+}
+
+/* Staggered reveals inside grids */
+.reveal-stagger > *:nth-child(1) { transition-delay: 0.00s; }
+.reveal-stagger > *:nth-child(2) { transition-delay: 0.08s; }
+.reveal-stagger > *:nth-child(3) { transition-delay: 0.16s; }
+.reveal-stagger > *:nth-child(4) { transition-delay: 0.24s; }
+
+/* ==========================================
+   NAV SCROLL SHADOW
+   ========================================== */
+.site-nav {
+  transition:
+    box-shadow var(--duration-base) var(--ease-in-out),
+    border-color var(--duration-base) var(--ease-in-out);
+}
+
+/* ==========================================
+   FEED ITEM STAGGER
+   ========================================== */
+.family-feed .feed-item:nth-child(1) { animation-delay: 0.0s; }
+.family-feed .feed-item:nth-child(2) { animation-delay: 0.15s; }
+.family-feed .feed-item:nth-child(3) { animation-delay: 0.30s; }
+.family-feed .feed-item:nth-child(4) { animation-delay: 0.45s; }
+
+/* ==========================================
+   REDUCED MOTION — Disable all non-essential
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep tally strokes visible even without animation */
+  .tally-svg .tally-stroke {
+    stroke-dashoffset: 0 !important;
+  }
+
+  .tally-count-animate {
+    opacity: 1 !important;
+  }
+
+  .hero-text-animate > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero-visual-animate {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

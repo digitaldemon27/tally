@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tally — Every habit is a vote for who you're becoming</title>
+  <meta name="description" content="Tally is an identity-based habit tracker where every completed habit is a vote toward who you're becoming. No streaks that reset. No shame. Just quiet, permanent progress." />
+
+  <!-- Stylesheets — loaded in dependency order -->
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body>
+
+  <!-- =============================================
+       NAV
+       ============================================= -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <!-- Inline micro tally SVG -->
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+
+        <ul class="nav-links" role="list">
+          <li><a href="#how-it-works" class="nav-link">How it works</a></li>
+          <li><a href="#vs-others"    class="nav-link">Why Tally</a></li>
+          <li><a href="#family"       class="nav-link">Family</a></li>
+          <li><a href="#sign-up"      class="nav-link btn btn-primary">Start voting</a></li>
+        </ul>
+
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+
+    <!-- =============================================
+         HERO
+         ============================================= -->
+    <section class="hero" id="hero" aria-labelledby="hero-heading">
+      <div class="container">
+        <div class="hero-content">
+
+          <!-- Left: copy -->
+          <div class="hero-text-animate">
+            <div class="hero-eyebrow">
+              <span class="eyebrow">A different kind of habit tracker</span>
+            </div>
+
+            <h1 class="hero-headline" id="hero-heading">
+              Every habit is a vote for who you're
+              <span class="accent display-italic">becoming.</span>
+            </h1>
+
+            <p class="hero-subtext">
+              Streaks reset to zero on one bad day. Tally never does. Each time you show up, you cast a vote for your identity — and votes only ever accumulate. Miss a day? That's one less vote, not a failure.
+            </p>
+
+            <div class="hero-cta-group">
+              <a href="#sign-up" class="btn btn-primary btn-lg" id="hero-cta-primary">Start voting — it's free</a>
+              <a href="#how-it-works" class="btn btn-ghost">See how it works</a>
+            </div>
+
+            <p class="hero-scroll-hint text-sm">
+              <span class="scroll-arrow" aria-hidden="true">↓</span>
+              Scroll to see what makes this different
+            </p>
+          </div>
+
+          <!-- Right: visual comparison -->
+          <div class="hero-visual hero-visual-animate" aria-label="Visual comparison: a broken streak versus a growing vote tally">
+
+            <!-- Broken streak — greyed out, struck through -->
+            <div class="card-streak" aria-label="Old approach: a streak counter that broke">
+              <p class="card-streak__label">Your streak</p>
+              <p class="card-streak__number" aria-label="47 days, crossed out">47</p>
+              <p class="card-streak__sub">Missed one day. Reset to&nbsp;0.</p>
+            </div>
+
+            <!-- Vote tally — growing, confident -->
+            <div class="card-tally" aria-label="Tally approach: a vote tally that only grows">
+              <p class="card-tally__label">Votes cast · Reader</p>
+
+              <!-- Animated SVG tally marks (13 strokes = 2 full groups + 3) -->
+              <div class="tally-marks" aria-hidden="true">
+                <!-- Group 1: votes 1-5 -->
+                <div class="tally-group">
+                  <svg class="tally-svg" width="52" height="32" viewBox="0 0 52 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line class="tally-stroke" x1="6"  y1="4" x2="6"  y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="16" y1="4" x2="16" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="26" y1="4" x2="26" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="36" y1="4" x2="36" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="2"  y1="26" x2="46" y2="6"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <!-- Group 2: votes 6-10 -->
+                <div class="tally-group">
+                  <svg class="tally-svg" width="52" height="32" viewBox="0 0 52 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line class="tally-stroke" x1="6"  y1="4" x2="6"  y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="16" y1="4" x2="16" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="26" y1="4" x2="26" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="36" y1="4" x2="36" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="2"  y1="26" x2="46" y2="6"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <!-- Group 3: votes 11-13 (partial) -->
+                <div class="tally-group">
+                  <svg class="tally-svg" width="36" height="32" viewBox="0 0 36 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line class="tally-stroke" x1="6"  y1="4" x2="6"  y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="16" y1="4" x2="16" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                    <line class="tally-stroke" x1="26" y1="4" x2="26" y2="28" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+
+              <p class="card-tally__count tally-count-animate" id="hero-vote-count" aria-live="polite">13 votes</p>
+              <p class="card-tally__sub">This week. Your tally never resets.</p>
+              <span class="card-tally__badge">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M5 1l1.09 2.26L9 3.82 7 5.77l.45 2.68L5 7.1 2.55 8.45 3 5.77 1 3.82l2.91-.56L5 1z"/></svg>
+                +3 this week · 82% consistent
+              </span>
+
+              <!-- Interactive demo CTA -->
+              <button
+                class="btn btn-secondary mt-4"
+                id="cast-vote-btn"
+                aria-label="Cast a demo vote"
+                style="width:100%; margin-top: 1.25rem;"
+              >
+                Cast a vote ✓
+              </button>
+            </div>
+
+          </div><!-- /hero-content -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================
+         HOW IT WORKS — Philosophy / Core Concepts
+         ============================================= -->
+    <section id="how-it-works" class="section--alt" aria-labelledby="how-heading">
+      <div class="container">
+
+        <div class="section-head centered reveal">
+          <p class="eyebrow">Built on Atomic Habits</p>
+          <h2 class="section-title" id="how-heading">Your habits are votes for your identity</h2>
+          <p class="section-subtitle mx-auto">
+            Instead of tracking a fragile consecutive-day count, Tally frames each habit as a vote cast toward the type of person you want to become. Three principles guide everything we built.
+          </p>
+        </div>
+
+        <div class="philosophy-steps reveal-stagger">
+
+          <div class="step-card reveal">
+            <p class="step-number" aria-hidden="true">01</p>
+            <h3>Define an identity, not a goal</h3>
+            <p>
+              Don't say "I want to read more." Say "I am a reader." Your habits flow from who you are, not a target on a checklist. Tally asks for your identity first — every habit you create is attached to it.
+            </p>
+          </div>
+
+          <div class="step-card reveal">
+            <p class="step-number" aria-hidden="true">02</p>
+            <h3>Cast a vote every time you show up</h3>
+            <p>
+              Every time you log a habit — even the scaled-down "I only did 1 page today" version — you cast a vote. Your total vote count and rolling consistency score are what grow. Nothing resets.
+            </p>
+          </div>
+
+          <div class="step-card reveal">
+            <p class="step-number" aria-hidden="true">03</p>
+            <h3>"Never miss twice" — the one rule</h3>
+            <p>
+              Missing one day is normal. If you miss two days in a row, Tally sends a gentle nudge — not a shame notification. The goal is to get back on track, not to guilt-trip you for being human.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =============================================
+         COMPARISON — Tally vs. streak/gamified apps
+         ============================================= -->
+    <section id="vs-others" aria-labelledby="comparison-heading">
+      <div class="container">
+
+        <div class="section-head centered reveal">
+          <p class="eyebrow">Why Tally is different</p>
+          <h2 class="section-title" id="comparison-heading">Streak apps punish you. Tally doesn't.</h2>
+          <p class="section-subtitle mx-auto">
+            Two common approaches to habit tracking both have a fundamental problem. Here's what we designed around instead.
+          </p>
+        </div>
+
+        <div class="comparison-grid reveal">
+
+          <!-- OLD: streak-based -->
+          <div class="compare-card compare-card--old">
+            <span class="compare-card__tag">Streak apps (e.g. Streaks)</span>
+            <h3>A counter that can shatter</h3>
+            <ul class="compare-list" role="list">
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>A single missed day resets everything to zero. 47 days of effort — gone.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>The psychology is fragile: one bad day can feel like losing it all, so people quit entirely.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>Tracks consecutive completion, not the identity you're building over time.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- OLD: gamified punishment -->
+          <div class="compare-card compare-card--old">
+            <span class="compare-card__tag">Gamified apps (e.g. Habitica)</span>
+            <h3>Accountability through shame</h3>
+            <ul class="compare-list" role="list">
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>A "boss" damages everyone in your party if you don't complete tasks. Social pressure via punishment.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>Uses RPG health bars and damage mechanics — the visual language of failure, not growth.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✕</span>
+                <span>Works through external fear, not internal identity-driven motivation.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Tally approach — full width below -->
+        <div class="compare-card compare-card--new mt-8 reveal">
+          <span class="compare-card__tag">Tally — vote-based identity tracking</span>
+          <h3>Quiet, permanent accumulation</h3>
+          <div class="grid-2" style="margin-top: var(--space-4);">
+            <ul class="compare-list" role="list">
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span><strong>Votes only accumulate.</strong> A missed day dents your rolling consistency slightly — it never erases your history.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span><strong>Scaled-down versions count.</strong> Couldn't run 5k today? "Walked around the block" still casts a vote for the identity "I move daily."</span>
+              </li>
+            </ul>
+            <ul class="compare-list" role="list">
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span><strong>The nudge, not the punishment.</strong> Two missed days trigger a gentle check-in — nothing disappears, nobody in your group gets hurt.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span><strong>Identity-first framing.</strong> Every habit you create is attached to "I am a ___." You build the person, not the score.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =============================================
+         FAMILY GROUPS
+         ============================================= -->
+    <section id="family" class="family-section" aria-labelledby="family-heading">
+      <div class="container">
+
+        <div class="grid-2">
+
+          <!-- Copy -->
+          <div class="reveal">
+            <p class="eyebrow">Optional, not required</p>
+            <h2 class="section-title" id="family-heading">Make it a family thing — if you want</h2>
+            <p class="section-subtitle" style="margin-bottom: var(--space-6);">
+              Tally works completely on its own. But if you want an extra layer of accountability, invite a parent or sibling to your Family Group.
+            </p>
+            <ul class="compare-list" role="list" style="margin-bottom: var(--space-6);">
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span>See a live feed of family members casting votes for their own identities — not a leaderboard, just a quiet reminder that the behaviour is normal.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span>Pick one person as your accountability buddy for a specific habit. They're notified only if you're about to miss two days in a row — not before.</span>
+              </li>
+              <li class="compare-item">
+                <span class="compare-item__icon" aria-hidden="true">✓</span>
+                <span>No punishment mechanic. No one's health bar drops because you skipped the gym.</span>
+              </li>
+            </ul>
+            <a href="#sign-up" class="btn btn-primary">Start with just yourself →</a>
+          </div>
+
+          <!-- Live feed demo -->
+          <div class="reveal" aria-label="Example family vote feed">
+            <div class="family-feed" role="feed" aria-label="Sample family activity feed">
+
+              <article class="feed-item">
+                <div class="feed-avatar" style="background-color:#E8F0EB; color:#3D6B4F;" aria-hidden="true">M</div>
+                <div>
+                  <p class="feed-text"><strong>Mum</strong> voted for <strong>Early Riser</strong></p>
+                  <p class="feed-time">2 min ago</p>
+                </div>
+                <span class="feed-vote-badge" aria-label="Vote 34">+1 vote</span>
+              </article>
+
+              <article class="feed-item">
+                <div class="feed-avatar" style="background-color:#EDE7D9; color:#7A6E62;" aria-hidden="true">R</div>
+                <div>
+                  <p class="feed-text"><strong>Rohan</strong> cast a tiny vote for <strong>Runner</strong></p>
+                  <p class="feed-time">14 min ago — scaled-down version</p>
+                </div>
+                <span class="feed-vote-badge" aria-label="Vote 21">+1 vote</span>
+              </article>
+
+              <article class="feed-item">
+                <div class="feed-avatar" style="background-color:#E8F0EB; color:#2E5A40;" aria-hidden="true">P</div>
+                <div>
+                  <p class="feed-text"><strong>Priya</strong> voted for <strong>Reader</strong></p>
+                  <p class="feed-time">1 hr ago</p>
+                </div>
+                <span class="feed-vote-badge" aria-label="Vote 62">+1 vote</span>
+              </article>
+
+              <article class="feed-item">
+                <div class="feed-avatar" style="background-color:#F5F0E8; color:#4A5568;" aria-hidden="true">A</div>
+                <div>
+                  <p class="feed-text"><strong>Ananya</strong> voted for <strong>Mindful</strong></p>
+                  <p class="feed-time">3 hrs ago</p>
+                </div>
+                <span class="feed-vote-badge" aria-label="Vote 48">+1 vote</span>
+              </article>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================
+         SIGN-UP FORM
+         ============================================= -->
+    <section id="sign-up" class="form-section" aria-labelledby="signup-heading">
+      <div class="container">
+
+        <div class="section-head centered reveal">
+          <p class="eyebrow">Cast your first vote</p>
+          <h2 class="section-title" id="signup-heading">Start building your identity today</h2>
+          <p class="section-subtitle mx-auto">Free, no credit card. Takes under a minute.</p>
+        </div>
+
+        <div class="form-card reveal">
+
+          <!-- Form itself -->
+          <form id="signup-form" novalidate autocomplete="on" aria-label="Sign up form">
+
+            <div id="form-body">
+              <h3 class="form-title" id="form-title-text">Create your account</h3>
+              <p class="form-subtitle">Your identity. Your votes. Your progress.</p>
+
+              <!-- ── Name ── -->
+              <div class="field-group" id="field-name-group">
+                <label class="field-label" for="input-name">
+                  Full name <span class="field-required" aria-hidden="true">*</span>
+                </label>
+                <div class="field-input-wrap">
+                  <input
+                    class="field-input"
+                    type="text"
+                    id="input-name"
+                    name="name"
+                    autocomplete="name"
+                    placeholder="Your name"
+                    aria-required="true"
+                    aria-describedby="error-name"
+                    maxlength="50"
+                  />
+                  <span class="field-status-icon" id="icon-name" aria-hidden="true"></span>
+                </div>
+                <div class="field-error" id="error-name" role="alert" aria-live="polite">
+                  <span class="field-error__icon" aria-hidden="true">⚠</span>
+                  <span id="error-name-text"></span>
+                </div>
+              </div>
+
+              <!-- ── Email ── -->
+              <div class="field-group" id="field-email-group">
+                <label class="field-label" for="input-email">
+                  Email address <span class="field-required" aria-hidden="true">*</span>
+                </label>
+                <div class="field-input-wrap">
+                  <input
+                    class="field-input"
+                    type="email"
+                    id="input-email"
+                    name="email"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                    aria-required="true"
+                    aria-describedby="error-email"
+                  />
+                  <span class="field-status-icon" id="icon-email" aria-hidden="true"></span>
+                </div>
+                <div class="field-error" id="error-email" role="alert" aria-live="polite">
+                  <span class="field-error__icon" aria-hidden="true">⚠</span>
+                  <span id="error-email-text"></span>
+                </div>
+              </div>
+
+              <!-- ── Password ── -->
+              <div class="field-group" id="field-password-group">
+                <label class="field-label" for="input-password">
+                  Password <span class="field-required" aria-hidden="true">*</span>
+                </label>
+                <div class="field-input-wrap">
+                  <input
+                    class="field-input has-toggle"
+                    type="password"
+                    id="input-password"
+                    name="password"
+                    autocomplete="new-password"
+                    placeholder="At least 8 characters"
+                    aria-required="true"
+                    aria-describedby="error-password strength-meter-label"
+                  />
+                  <button
+                    type="button"
+                    class="field-toggle-btn"
+                    id="toggle-password"
+                    aria-label="Show password"
+                    aria-controls="input-password"
+                  >
+                    <!-- Eye icon -->
+                    <svg id="eye-icon-password" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="field-error" id="error-password" role="alert" aria-live="polite">
+                  <span class="field-error__icon" aria-hidden="true">⚠</span>
+                  <span id="error-password-text"></span>
+                </div>
+                <!-- Strength meter -->
+                <div class="strength-meter" id="strength-meter" aria-label="Password strength">
+                  <div class="strength-track" aria-hidden="true">
+                    <div class="strength-bar" id="strength-bar-1"></div>
+                    <div class="strength-bar" id="strength-bar-2"></div>
+                    <div class="strength-bar" id="strength-bar-3"></div>
+                  </div>
+                  <span class="strength-label" id="strength-meter-label" aria-live="polite"></span>
+                </div>
+              </div>
+
+              <!-- ── Confirm Password ── -->
+              <div class="field-group" id="field-confirm-group">
+                <label class="field-label" for="input-confirm">
+                  Confirm password <span class="field-required" aria-hidden="true">*</span>
+                </label>
+                <div class="field-input-wrap">
+                  <input
+                    class="field-input has-toggle"
+                    type="password"
+                    id="input-confirm"
+                    name="confirm_password"
+                    autocomplete="new-password"
+                    placeholder="Repeat your password"
+                    aria-required="true"
+                    aria-describedby="error-confirm"
+                  />
+                  <button
+                    type="button"
+                    class="field-toggle-btn"
+                    id="toggle-confirm"
+                    aria-label="Show password"
+                    aria-controls="input-confirm"
+                  >
+                    <svg id="eye-icon-confirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="field-error" id="error-confirm" role="alert" aria-live="polite">
+                  <span class="field-error__icon" aria-hidden="true">⚠</span>
+                  <span id="error-confirm-text"></span>
+                </div>
+              </div>
+
+              <!-- Backend error (e.g. email already registered) -->
+              <div class="field-server-error" id="server-error" role="alert">
+                <span id="server-error-text"></span>
+              </div>
+
+              <!-- Submit row -->
+              <div class="form-submit-row">
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-lg btn-submit"
+                  id="submit-btn"
+                  aria-label="Create your Tally account"
+                  disabled
+                >
+                  Cast my first vote →
+                </button>
+                <div class="submit-tooltip" id="submit-tooltip" role="tooltip">
+                  Fill in all fields correctly to continue
+                </div>
+              </div>
+
+              <p class="caption text-center mt-4">
+                Already have an account? <a href="#" style="color: var(--moss); text-decoration: underline;" id="link-login">Sign in instead</a>
+              </p>
+            </div>
+
+            <!-- Success state — shown after submit -->
+            <div class="form-success" id="form-success" aria-live="polite">
+              <div class="form-success__icon" aria-hidden="true">🗳️</div>
+              <h3 style="margin-bottom: var(--space-3);">Your first vote is cast.</h3>
+              <p class="text-slate" style="font-size: 0.9375rem; max-width: 36ch; margin-inline: auto;">
+                Welcome to Tally. Head to your inbox to confirm your email, then start building your identity.
+              </p>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =============================================
+       FOOTER
+       ============================================= -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#how-it-works" class="footer-link">How it works</a></li>
+            <li><a href="#vs-others"    class="footer-link">Why Tally</a></li>
+            <li><a href="#family"       class="footer-link">Family groups</a></li>
+            <li><a href="#sign-up"      class="footer-link">Sign up free</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="footer-col-title">Approach</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#" class="footer-link">Our philosophy</a></li>
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- JS — deferred so it runs after DOM is parsed -->
+  <script src="js/main.js" defer></script>
+
+</body>
+</html>
