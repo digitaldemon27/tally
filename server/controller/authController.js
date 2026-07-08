@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import User from "../Schema/userSchema.js";
+import { user } from "../Models/patientModel.js";
 import redisClient from "../config/redisConfig.js";
+import { sendVerificationEmail } from "../src/services/mail.service.js";
 
 
 // ---------Radis key namespacing--------------------
@@ -31,8 +32,8 @@ export const registerUser = async (req, res) => {
         //if username or/and email already exists
 
         // const exsitingUser = await user.findOne({ email, username }); -> this is an and operation if both exist than only returns 1
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
+        const exisitingUser = await user.findOne({ $or: [{ email }, { username }] });
+        if (exisitingUser) {
             return res.status(400).json({
                 success: false,
                 message: "Email or username already exists",
@@ -56,13 +57,11 @@ export const registerUser = async (req, res) => {
         await redisClient.set(pendingUserKey(token), JSON.stringify(tempPayload), { EX: 15 * 60 })
         await redisClient.set(cooldownKey(email), "true", { EX: 60 });
 
-        const verificationLink = `https://myapp.com/verify?token=${token}`;
+        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${token}`;
 
-        await transporter.sendMail({
-            from: '"My App" <noreply@myapp.com>',
-            to: email,
-            subject: "Verify Your Email Address",
-            html: `<p>Please click the following link to complete your registration: <a href="${verificationLink}">${verificationLink}</a></p>`
+        await sendVerificationEmail(email, {
+            username,
+            verificationUrl: verificationLink
         });
 
         return res.status(200).json({
