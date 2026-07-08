@@ -5,3 +5,5 @@ const masterRoutes = express.Router();
 
 // Login - sign up routes
 masterRoutes.use("/auth", authRoutes);
+
+export default masterRoutes;

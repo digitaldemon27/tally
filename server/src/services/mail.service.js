@@ -2,6 +2,7 @@ import { resend, FROM_EMAIL } from '../config/mail.config.js';
 import { getOnboardingTemplate } from '../templates/onboarding.template.js';
 import { getResetPasswordTemplate } from '../templates/resetPassword.template.js';
 import { getOtpTemplate } from '../templates/otp.template.js';
+import { getVerificationTemplate } from '../templates/verification.template.js';
 
 /**
  * Low-level generic send email utility.
@@ -101,5 +102,25 @@ export async function sendOtpEmail(to, { name, otpCode, expiryMinutes = 10 }) {
     subject,
     html,
     text: `Hi ${name || 'there'},\n\nYour Tally verification code is: ${otpCode}\n\nThis code is valid for ${expiryMinutes} minutes.`,
+  });
+}
+
+/**
+ * Sends a registration email verification link.
+ * 
+ * @param {string} to - Recipient email
+ * @param {Object} variables - Template variables
+ * @param {string} variables.username - User's username
+ * @param {string} variables.verificationUrl - Verification link
+ */
+export async function sendVerificationEmail(to, { username, verificationUrl }) {
+  const subject = 'Verify Your Email Address ✉️';
+  const html = getVerificationTemplate({ username, verificationUrl });
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text: `Hi @${username || 'there'},\n\nPlease use this link to complete your Tally registration: ${verificationUrl}\n\nThis link will expire in 15 minutes.`,
   });
 }

@@ -3,7 +3,7 @@ import { connectDB, clusterConnection } from "./config/dbConfig.js"
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import masterRoutes from './routes/masterRoute.js';
+import masterRoutes from './Routes/masterRoutes.js';
 
 //configering env file
 dotenv.config();

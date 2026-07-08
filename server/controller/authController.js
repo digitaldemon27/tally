@@ -1,7 +1,80 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { user } from "../Models/patientModel.js";
-import transporter from "../service/nodemailer.js";
+import User from "../Schema/userSchema.js";
 import redisClient from "../config/redisConfig.js";
 
+
+// ---------Radis key namespacing--------------------
+// function to generate the key of the pending users
+const pendingUserKey = (token) => `auth:pending:${token}`; //live for 15 minutes
+
+// function to generate the key for the look up of mail from which the token is already generated , using the email as the key
+// not the token becuase on every reqeust new token is assigned so no meaning of cooldown 
+const cooldownKey = (email) => `auth:cooldown:${email}`; // live for 60 seconds
+
+//-----------------token generater functions----------------------------------//
+//function to generate the ranom unique string
+const generateToken = () => {
+    return crypto.randomBytes(32).toString("hex");
+}
+
+
+//----- Registering the new user -------------------
+//----- Route : POST /api/auth/sign-up -------------
+
+export const registerUser = async (req, res) => {
+    const email = req.body.email?.trim().toLowerCase();
+    const username = req.body.username?.trim();
+
+    try {
+        //if username or/and email already exists
+
+        // const exsitingUser = await user.findOne({ email, username }); -> this is an and operation if both exist than only returns 1
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: "Email or username already exists",
+            });
+        }
+        //it means user does not exist , we will generate the payload and map it with a secure token 
+
+        //if the user has requested earlier for sign up and still in the cooldown
+        const isInCooldown = await redisClient.get(cooldownKey(email));
+        if (isInCooldown) {
+            return res.status(429).json({
+                success: false,
+                message: "Please wait 60 seconds before requesting another verification link.",
+            });
+        }
+
+        //now if we in this line it means mail is not in cooldown so lets generate the token and store the payload into database
+        const token = generateToken();
+        const tempPayload = { email, username }
+
+        await redisClient.set(pendingUserKey(token), JSON.stringify(tempPayload), { EX: 15 * 60 })
+        await redisClient.set(cooldownKey(email), "true", { EX: 60 });
+
+        const verificationLink = `https://myapp.com/verify?token=${token}`;
+
+        await transporter.sendMail({
+            from: '"My App" <noreply@myapp.com>',
+            to: email,
+            subject: "Verify Your Email Address",
+            html: `<p>Please click the following link to complete your registration: <a href="${verificationLink}">${verificationLink}</a></p>`
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Verification link sent to your email address.",
+        });
+
+    } catch (error) {
+        console.error("Error in registration request:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error encountered during registration.",
+        });
+    }
+}
