@@ -1,7 +1,5 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { user } from "../Models/patientModel.js";
+import User from "../Schema/userSchema.js";
 import redisClient from "../config/redisConfig.js";
 import { sendVerificationEmail } from "../src/services/mail.service.js";
 
@@ -32,7 +30,7 @@ export const registerUser = async (req, res) => {
         //if username or/and email already exists
 
         // const exsitingUser = await user.findOne({ email, username }); -> this is an and operation if both exist than only returns 1
-        const exisitingUser = await user.findOne({ $or: [{ email }, { username }] });
+        const exisitingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (exisitingUser) {
             return res.status(400).json({
                 success: false,

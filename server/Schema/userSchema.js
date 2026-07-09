@@ -1,18 +1,7 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, "Name is required"],
-    trim: true,
-    validate: {
-      validator: function(v) {
-        // Must be a string, at least 2 characters after trimming, and not empty/spaces only
-        return typeof v === "string" && v.trim().length >= 2;
-      },
-      message: "Name must be at least 2 characters long and cannot consist only of spaces."
-    }
-  },
+//fixed : removed 'name' field — app only collects 'username'; having name as required: true caused a Mongoose validation error in setPassword.js since name is never passed to User.create
   username: {
     type: String,
     required: [true, "Username is required"],
@@ -63,6 +52,9 @@ const userSchema = new mongoose.Schema({
   is_active: {
     type: Boolean,
     default: true
+  },
+  refresh_token: {
+    type: String
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields

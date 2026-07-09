@@ -1,7 +1,6 @@
 import { resend, FROM_EMAIL } from '../config/mail.config.js';
 import { getOnboardingTemplate } from '../templates/onboarding.template.js';
 import { getResetPasswordTemplate } from '../templates/resetPassword.template.js';
-import { getOtpTemplate } from '../templates/otp.template.js';
 import { getVerificationTemplate } from '../templates/verification.template.js';
 
 /**
@@ -84,26 +83,6 @@ export async function sendResetPasswordEmail(to, { name, resetUrl }) {
   });
 }
 
-/**
- * Sends a verification OTP email.
- * 
- * @param {string} to - Recipient email
- * @param {Object} variables - Template variables
- * @param {string} variables.name - User's name
- * @param {string} variables.otpCode - The 6-digit OTP code
- * @param {number} [variables.expiryMinutes=10] - OTP expiry duration
- */
-export async function sendOtpEmail(to, { name, otpCode, expiryMinutes = 10 }) {
-  const subject = `${otpCode} is your Tally verification code 🔑`;
-  const html = getOtpTemplate({ name, otpCode, expiryMinutes });
-
-  return sendEmail({
-    to,
-    subject,
-    html,
-    text: `Hi ${name || 'there'},\n\nYour Tally verification code is: ${otpCode}\n\nThis code is valid for ${expiryMinutes} minutes.`,
-  });
-}
 
 /**
  * Sends a registration email verification link.
