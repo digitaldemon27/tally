@@ -1,14 +1,13 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-//fixed : removed 'name' field — app only collects 'username'; having name as required: true caused a Mongoose validation error in setPassword.js since name is never passed to User.create
   username: {
     type: String,
     required: [true, "Username is required"],
     unique: true,
     trim: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Must not contain any spaces and must not contain any uppercase letters
         return typeof v === "string" && !/\s/.test(v) && !/[A-Z]/.test(v);
       },
@@ -20,7 +19,7 @@ const userSchema = new mongoose.Schema({
     required: [true, "Email is required"],
     trim: true,
     lowercase: true,
-    set: function(v) {
+    set: function (v) {
       if (typeof v !== "string") return v;
       let emailVal = v.trim().toLowerCase();
       // If there is no '@' (no extension/domain), add '@gmail.com' by default
@@ -30,7 +29,7 @@ const userSchema = new mongoose.Schema({
       return emailVal;
     },
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Simple regex validation for email structure (e.g. name@domain.ext)
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },
