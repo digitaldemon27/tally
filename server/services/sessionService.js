@@ -13,3 +13,6 @@ export const sessionKey = (sessionId) => `session:${sessionId}`;
 
 //sessions set holds all active sessionIds for a given user (used for multi-device logout / audit)
 export const sessionsSetKey = (userId) => `sessions:${userId}`;
+
+//stores the hash of a recently-rotated-out refresh token to detect replay attacks before it expires
+export const deadTokenKey = (sessionId) => `dead_token:${sessionId}`;

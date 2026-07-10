@@ -25,3 +25,15 @@ export const hashToken = (rawToken) =>
 
 //function to generate the random unique string (used as a sign-up verification token)
 export const generateToken = () => crypto.randomBytes(32).toString("hex");
+
+
+/**
+ * Verifies a refresh token's signature and expiry.
+ * @param {string} token - raw refresh token from cookie
+ * @returns {object} decoded payload { userId, sessionId } if valid
+ * @throws if token is invalid, expired, or tampered
+ */
+export const verifyRefreshToken = (token) => {
+    const decode = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    return decode;
+};
