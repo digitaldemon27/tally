@@ -1,22 +1,8 @@
-import crypto from "crypto";
-import User from "../Schema/userSchema.js";
+import User from "../schema/userSchema.js";
 import redisClient from "../config/redisConfig.js";
 import { sendVerificationEmail } from "../src/services/mail.service.js";
-
-
-// ---------Radis key namespacing--------------------
-// function to generate the key of the pending users
-const pendingUserKey = (token) => `auth:pending:${token}`; //live for 15 minutes
-
-// function to generate the key for the look up of mail from which the token is already generated , using the email as the key
-// not the token becuase on every reqeust new token is assigned so no meaning of cooldown 
-const cooldownKey = (email) => `auth:cooldown:${email}`; // live for 60 seconds
-
-//-----------------token generater functions----------------------------------//
-//function to generate the ranom unique string
-const generateToken = () => {
-    return crypto.randomBytes(32).toString("hex");
-}
+import { pendingUserKey, cooldownKey } from "../services/sessionService.js";
+import { generateToken } from "../services/tokenService.js";
 
 
 //----- Registering the new user -------------------

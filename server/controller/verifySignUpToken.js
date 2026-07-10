@@ -1,5 +1,5 @@
 import redisClient from "../config/redisConfig.js";
-const pendingUserKey = (token) => `auth:pending:${token}`;
+import { pendingUserKey } from "../services/sessionService.js";
 
 export const verifyTokenStatus = async (req, res) => {
 
