@@ -1,5 +1,5 @@
-import redisClient from "../config/redisConfig.js";
-import { pendingUserKey } from "../services/sessionService.js";
+import redisClient from "../../config/redisConfig.js";
+import { pendingUserKey } from "../../services/sessionService.js";
 
 export const verifyTokenStatus = async (req, res) => {
 

@@ -1,18 +1,39 @@
 // FIX: missing .js extension required for ES module resolution
-import redisClient from "../config/redisConfig.js";
-import { sessionKey, sessionsSetKey, deadTokenKey } from "../services/sessionService.js";
+import redisClient from "../../config/redisConfig.js";
+import { sessionKey, sessionsSetKey, deadTokenKey } from "../../services/sessionService.js";
+import jwt from "jsonwebtoken";
 
 export const logoutFromOnedevice = async (req, res) => {
-    //since this controller hit after the auth middle ware so in the req.user we have userId and sessionId
-    const { userId, sessionId } = req.user;
+    // read from the refresh token cookie instead of req.user because this route has no authenticateJWT middleware
+    const token = req.cookies?.refreshToken || req.cookies?.refresh_token;
 
     try {
-        if (!userId || !sessionId) {
-            return res.status(401).json({
-                success: false,
-                message: "missing userId , sessionId"
-            })
+        // if no refresh token is present, they are already logged out from this device's perspective
+        if (!token) {
+            return res.status(200).json({
+                success: true,
+                message: "logout successfully"
+            });
         }
+
+        // we use jwt.decode rather than jwt.verify because the refresh token might be expired,
+        // and an expired token still needs to be able to successfully log out.
+        const decoded = jwt.decode(token);
+
+        // if token payload is invalid, just clear the cookie and respond success
+        if (!decoded || !decoded.userId || !decoded.sessionId) {
+            res.clearCookie("refreshToken", {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict"
+            });
+            return res.status(200).json({
+                success: true,
+                message: "logout successfully"
+            });
+        }
+
+        const { userId, sessionId } = decoded;
         //both userId and sessionId exists
         //now we will remove the session from the session:<sessionId>
         const sessionIdKey = sessionKey(sessionId);

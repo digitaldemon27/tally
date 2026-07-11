@@ -1,10 +1,9 @@
 import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
-import redisClient from "../config/redisConfig.js";
-import User from "../schema/userSchema.js";
-import { sendOnboardingEmail } from "../src/services/mail.service.js";
-import { pendingUserKey, sessionKey, sessionsSetKey } from "../services/sessionService.js";
-import { generateAccessToken, generateRefreshToken, hashToken } from "../services/tokenService.js";
+import redisClient from "../../config/redisConfig.js";
+import User from "../../schema/userSchema.js";
+import { sendOnboardingEmail } from "../../src/services/mail.service.js";
+import { pendingUserKey, sessionKey, sessionsSetKey, generateSessionId } from "../../services/sessionService.js";
+import { generateAccessToken, generateRefreshToken, hashToken } from "../../services/tokenService.js";
 
 
 //after successfully checking the token exists in redis we use this controller to set the password
@@ -55,7 +54,7 @@ export const setPassword = async (req, res) => {
 
         //generating a unique session id for this device/login — UUID gives us a
         //random, unguessable identifier that we can store in the refresh token payload
-        const sessionId = randomUUID();
+        const sessionId = generateSessionId();
 
         // previously refresh token was being stored in plaintext on the Mongo User document,
         // which breaks multi-device support (one field can't hold multiple sessions) and

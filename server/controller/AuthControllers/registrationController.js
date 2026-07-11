@@ -1,8 +1,8 @@
-import User from "../schema/userSchema.js";
-import redisClient from "../config/redisConfig.js";
-import { sendVerificationEmail } from "../src/services/mail.service.js";
-import { pendingUserKey, cooldownKey } from "../services/sessionService.js";
-import { generateToken } from "../services/tokenService.js";
+import User from "../../schema/userSchema.js";
+import redisClient from "../../config/redisConfig.js";
+import { sendVerificationEmail } from "../../src/services/mail.service.js";
+import { pendingUserKey, cooldownKey } from "../../services/sessionService.js";
+import { generateToken } from "../../services/tokenService.js";
 
 
 //----- Registering the new user -------------------

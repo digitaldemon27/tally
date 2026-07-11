@@ -46,6 +46,8 @@ const userSchema = new mongoose.Schema({
   },
   hashed_password: {
     type: String,
+    //added select: false so the hashed password is not leaked in default queries
+    select: false,
     required: [true, "Password is required"]
   },
   is_active: {

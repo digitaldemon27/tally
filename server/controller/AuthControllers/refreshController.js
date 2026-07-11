@@ -1,6 +1,6 @@
-import { verifyRefreshToken, generateAccessToken, generateRefreshToken, hashToken } from "../services/tokenService.js";
-import { sessionKey, sessionsSetKey, deadTokenKey } from "../services/sessionService.js";
-import redisClient from "../config/redisConfig.js";
+import { verifyRefreshToken, generateAccessToken, generateRefreshToken, hashToken } from "../../services/tokenService.js";
+import { sessionKey, sessionsSetKey, deadTokenKey } from "../../services/sessionService.js";
+import redisClient from "../../config/redisConfig.js";
 
 export const refreshToken = async (req, res) => {
     //we will get the token in the cookie 
@@ -45,12 +45,14 @@ export const refreshToken = async (req, res) => {
     }
 
     //session exists than next task is to check the token's existance into the 
-    const { hashedRefreshToken, userId, createdAt } = JSON.parse(rawData);
+    // the field saved by login/setPassword is hashedToken, not hashedRefreshToken. Also read device to carry it forward.
+    const { hashedToken, userId, device, createdAt } = JSON.parse(rawData);
     const receivedTokenHash = hashToken(token);
 
     //if the refresh token stored in the DB and the one in the cookies are matching
     try {
-        if (hashedRefreshToken === receivedTokenHash) {
+        // fix: compare against hashedToken, not hashedRefreshToken
+        if (hashedToken === receivedTokenHash) {
             //we will give new refresh and access token
 
             const newAccessToken = generateAccessToken(userId);
@@ -61,7 +63,8 @@ export const refreshToken = async (req, res) => {
             await redisClient.set(
                 deadTokenRedisKey,
                 JSON.stringify({
-                    hashedToken: hashedRefreshToken,
+                    // fix: write dead_token payload with hashedOldToken per the spec instead of hashedToken
+                    hashedOldToken: hashedToken,
                     rotatedAt: new Date().toISOString(),
                 }),
                 { EX: 180 } //180 seconds TTL
@@ -72,7 +75,8 @@ export const refreshToken = async (req, res) => {
             //overwrite the session entry in redis with the new hash and reset the TTL to 30 days
             await redisClient.set(
                 redisKey,
-                JSON.stringify({ hashedRefreshToken: hashedNewRefreshToken, userId, createdAt }),
+                // use correct hashedToken field name and preserve the original device field, with a fresh createdAt
+                JSON.stringify({ userId, hashedToken: hashedNewRefreshToken, device, createdAt: new Date().toISOString() }),
                 { EX: 30 * 24 * 60 * 60 } //30 days in seconds
             );
 
@@ -96,9 +100,11 @@ export const refreshToken = async (req, res) => {
         else {
             const deadData = await redisClient.get(deadTokenKey(sessionID));
             if (deadData) {
-                const { hashedToken } = JSON.parse(deadData);
+                // read hashedOldToken to match the updated dead_token write payload
+                const { hashedOldToken } = JSON.parse(deadData);
                 //if we found that the received token is the same as the stored token in the dead_token we will revoke that perticular session
-                if (receivedTokenHash == hashedToken) {
+                //compare receivedTokenHash against hashedOldToken
+                if (receivedTokenHash == hashedOldToken) {
                     //we have user id so we will use it as a key to get the location
                     const multipleSessionKey = sessionsSetKey(userId);
 

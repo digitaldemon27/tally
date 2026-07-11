@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 // ─── Redis Key Namespacing ────────────────────────────────────────────────────
 // All Redis keys used across the app are defined here so they stay consistent.
 
@@ -16,3 +17,6 @@ export const sessionsSetKey = (userId) => `sessions:${userId}`;
 
 //stores the hash of a recently-rotated-out refresh token to detect replay attacks before it expires
 export const deadTokenKey = (sessionId) => `dead_token:${sessionId}`;
+
+//function to generate random sessionId
+export const generateSessionId = () => randomUUID();
