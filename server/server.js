@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import masterRoutes from './routes/masterRoutes.js';
 
 //configering env file
-dotenv.config();
+dotenv.config({ override: true });
 
 //express route
 const app = express();
@@ -37,7 +37,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-Routes
+// Routes
 app.use('/api', masterRoutes);
 
 // Error Handler

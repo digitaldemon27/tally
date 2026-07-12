@@ -1,7 +1,7 @@
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const redisClient = createClient({
     url: process.env.REDIS_URL,

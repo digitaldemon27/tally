@@ -1,4 +1,3 @@
-// FIX: missing .js extension required for ES module resolution
 import redisClient from "../../config/redisConfig.js";
 import { sessionKey, sessionsSetKey, deadTokenKey } from "../../services/sessionService.js";
 import jwt from "jsonwebtoken";
@@ -10,6 +9,7 @@ export const logoutFromOnedevice = async (req, res) => {
     try {
         // if no refresh token is present, they are already logged out from this device's perspective
         if (!token) {
+
             return res.status(200).json({
                 success: true,
                 message: "logout successfully"
@@ -20,8 +20,12 @@ export const logoutFromOnedevice = async (req, res) => {
         // and an expired token still needs to be able to successfully log out.
         const decoded = jwt.decode(token);
 
+
+
         // if token payload is invalid, just clear the cookie and respond success
         if (!decoded || !decoded.userId || !decoded.sessionId) {
+
+
             res.clearCookie("refreshToken", {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
@@ -34,10 +38,15 @@ export const logoutFromOnedevice = async (req, res) => {
         }
 
         const { userId, sessionId } = decoded;
+
+
+
         //both userId and sessionId exists
         //now we will remove the session from the session:<sessionId>
         const sessionIdKey = sessionKey(sessionId);
         const sessionSetKey = sessionsSetKey(userId);
+
+
 
         //session exists there , so delete the session
         await redisClient.del(sessionIdKey);
@@ -46,6 +55,8 @@ export const logoutFromOnedevice = async (req, res) => {
         await redisClient.sRem(sessionSetKey, sessionId);
 
         //clearing the cookies
+
+
         res.clearCookie("refreshToken", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",

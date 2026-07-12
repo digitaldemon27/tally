@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { clusterConnection } from "../config/dbConfig.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -61,5 +62,5 @@ const userSchema = new mongoose.Schema({
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
-const User = mongoose.model("User", userSchema);
+const User = clusterConnection.model("User", userSchema);
 export default User;
