@@ -81,7 +81,7 @@ export const login = async (req, res) => {
         console.error("Error finalizing login:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal server error encountered while creating your account."
+            message: "Internal server error encountered while logging in."
         });
     }
 }

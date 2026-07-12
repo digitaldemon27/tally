@@ -51,7 +51,7 @@ export const refreshToken = async (req, res) => {
 
     //if the refresh token stored in the DB and the one in the cookies are matching
     try {
-        // fix: compare against hashedToken, not hashedRefreshToken
+        // compare against hashedToken, not hashedRefreshToken
         if (hashedToken === receivedTokenHash) {
             //we will give new refresh and access token
 

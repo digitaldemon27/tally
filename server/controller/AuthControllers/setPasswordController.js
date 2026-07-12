@@ -11,21 +11,21 @@ import { generateAccessToken, generateRefreshToken, hashToken } from "../../serv
 
 //endpoint : POST /api/set-password
 export const setPassword = async (req, res) => {
-    const { token, password, timezone } = req.body;
+    const { signupToken, password, timezone } = req.body;
 
     try {
 
         //if any of the field is missing
-        if (!token || !password || !timezone) {
+        if (!signupToken || !password || !timezone) {
             return res.status(400).json({
                 success: false,
-                message: "Token , password and timezone are required",
+                message: "signupToken , password and timezone are required",
             });
         }
 
-        const key = pendingUserKey(token);
+        const pendingKey = pendingUserKey(signupToken);
 
-        const rawData = await redisClient.get(key);
+        const rawData = await redisClient.get(pendingKey);
         if (!rawData) {
             return res.status(400).json({
                 success: false,
@@ -50,14 +50,12 @@ export const setPassword = async (req, res) => {
         });
 
         //removing the redis pending-signup key now that the user doc exists in mongo
-        await redisClient.del(key);
+        await redisClient.del(pendingKey);
 
         //generating a unique session id for this device/login — UUID gives us a
         //random, unguessable identifier that we can store in the refresh token payload
         const sessionId = generateSessionId();
 
-        // previously refresh token was being stored in plaintext on the Mongo User document,
-        // which breaks multi-device support (one field can't hold multiple sessions) and
         // stores a usable credential in plaintext. Now generating the token with sessionId
         // in the payload and storing only a hash in a per-session Redis key.
         const refreshToken = generateRefreshToken(newUser._id.toString(), sessionId);
@@ -65,7 +63,6 @@ export const setPassword = async (req, res) => {
 
         //hash the raw refresh token before storing in redis — we never store usable tokens
         const hashedRefreshToken = hashToken(refreshToken);
-
         //capture a lightweight device hint from the request for auditability
         //if user-agent is absent (e.g. API clients, tests) we store null
         const device = req.headers["user-agent"] || null;

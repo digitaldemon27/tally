@@ -18,9 +18,7 @@ export const logoutFromOnedevice = async (req, res) => {
 
         // we use jwt.decode rather than jwt.verify because the refresh token might be expired,
         // and an expired token still needs to be able to successfully log out.
-        const decoded = jwt.decode(token);
-
-
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET, { ignoreExpiration: true })
 
         // if token payload is invalid, just clear the cookie and respond success
         if (!decoded || !decoded.userId || !decoded.sessionId) {
@@ -39,14 +37,10 @@ export const logoutFromOnedevice = async (req, res) => {
 
         const { userId, sessionId } = decoded;
 
-
-
         //both userId and sessionId exists
         //now we will remove the session from the session:<sessionId>
         const sessionIdKey = sessionKey(sessionId);
         const sessionSetKey = sessionsSetKey(userId);
-
-
 
         //session exists there , so delete the session
         await redisClient.del(sessionIdKey);
@@ -55,8 +49,6 @@ export const logoutFromOnedevice = async (req, res) => {
         await redisClient.sRem(sessionSetKey, sessionId);
 
         //clearing the cookies
-
-
         res.clearCookie("refreshToken", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",

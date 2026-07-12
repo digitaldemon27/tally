@@ -55,9 +55,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  refresh_token: {
-    type: String
-  }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt fields
 });
