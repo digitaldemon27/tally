@@ -1,5 +1,4 @@
 import Identity from "../../schema/identitySchema.js";
-import User from "../../schema/userSchema.js";
 
 //------------------------END point = POST /api/identity/create-identity -----------
 // ------ called middleware authenticateJWT to allow onlyverifed user to create-----
