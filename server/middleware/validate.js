@@ -18,7 +18,7 @@ export const validate = (schema) => {
         if (!result.success) {
             // Format Zod errors
             const formattedErrors = {};
-            result.error.errors.forEach((err) => {
+            result.error.issues.forEach((err) => {
                 const path = err.path.join(".");
                 formattedErrors[path] = err.message;
             });

@@ -68,7 +68,7 @@ export function validateData(schema, data) {
   if (!result.success) {
     // Format error messages nicely
     const errors = {};
-    result.error.errors.forEach((err) => {
+    result.error.issues.forEach((err) => {
       const field = err.path.join(".");
       errors[field] = err.message;
     });
