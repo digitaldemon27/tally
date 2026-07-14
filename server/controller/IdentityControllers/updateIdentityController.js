@@ -2,7 +2,6 @@ import Identity from "../../schema/identitySchema.js";
 
 // PATCH /api/identities/:id
 export const updateIdentity = async (req, res) => {
-    // Extract parameters from request
     const { id } = req.params;
     const userId = req.user.userId || req.user.id;
     const { name } = req.body;
@@ -17,14 +16,13 @@ export const updateIdentity = async (req, res) => {
                 });
             }
 
-            // manually check for name duplication before updating,To enforce the user-specific unique index cleanly and prevent cryptic database-level duplicate key errors from crashing the request.
+            // Manually check for name duplication before updating
             const existingIdentity = await Identity.findOne({
                 userId,
                 name: name.trim(),
                 _id: { $ne: id }
             });
 
-            // Return conflict if name is already taken
             if (existingIdentity) {
                 return res.status(409).json({
                     success: false,
@@ -33,32 +31,33 @@ export const updateIdentity = async (req, res) => {
             }
         }
 
-        // Run atomic update to modify identity fields
-        const updatedIdentity = await Identity.findOneAndUpdate(
-            { _id: id, userId },
-            { name: name?.trim() },
-            { new: true, runValidators: true }
-        );
+        // 1. Fetch document by ID alone to bypass multi-connection casting bugs
+        const identity = await Identity.findById(id);
 
-        // If identity is not found or user unauthorized
-        if (!updatedIdentity) {
+        // 2. Perform isolation verification via runtime string conversion
+        if (!identity || identity.userId.toString() !== userId.toString()) {
             return res.status(404).json({
                 success: false,
                 message: "identity not found"
             });
         }
 
-        // Return successful response with updated identity object
+        // 3. Mutate fields dynamically
+        if (name !== undefined) {
+            identity.name = name.trim();
+        }
+
+        // 4. Save the document to fire schema validation rules cleanly
+        const updatedIdentity = await identity.save();
+
         return res.status(200).json({
             success: true,
             message: "Identity updated successfully",
             identity: updatedIdentity
         });
-    } catch (error) {
-        // Log the internal error stack trace
-        console.error("error occurred while updating identity:", error.message);
 
-        // Return clean internal server error response
+    } catch (error) {
+        console.error("error occurred while updating identity:", error.message);
         return res.status(500).json({
             success: false,
             message: "internal server error"

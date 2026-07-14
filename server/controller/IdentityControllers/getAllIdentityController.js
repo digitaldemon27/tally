@@ -1,4 +1,4 @@
-import Identity from "../../schema/identitySchema.js"; w
+import Identity from "../../schema/identitySchema.js";
 
 
 // GET /api/identities

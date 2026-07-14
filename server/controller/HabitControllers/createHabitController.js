@@ -2,11 +2,12 @@ import Habit from "../../schema/habitSchema.js";
 import Identity from "../../schema/identitySchema.js";
 import { validateObjectId } from "../../utils/validation.js";
 
-// POST /api/habits
+// POST /api/identities/:identityId/habits
 // ------ called middleware authenticateJWT to allow only verified user to create-----
 export const createHabitController = async (req, res) => {
-    //destructuring name and identityId from req.body, and userId from verified user token
-    const { name, identityId } = req.body;
+    //destructuring name from req.body, identityId from req.params, and userId from verified user token
+    const { name } = req.body;
+    const { identityId } = req.params;
     const { userId } = req.user;
 
     try {

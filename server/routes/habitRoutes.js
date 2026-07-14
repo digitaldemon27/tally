@@ -10,7 +10,7 @@ import { deleteBulkHabits } from "../controller/HabitControllers/deleteHabitCont
 import { archiveHabitToggle } from "../controller/HabitControllers/archiveHabitController.js";
 import { updateHabit } from "../controller/HabitControllers/updateHabitController.js";
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 router.post("/", authenticateJWT, validate(habitNameSchema), createHabitController);
 router.get("/", authenticateJWT, getAllUserHabits);
