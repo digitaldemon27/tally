@@ -27,5 +27,7 @@ const habitSchema = new mongoose.Schema({
 // Compound unique index on identityId and name
 habitSchema.index({ identityId: 1, name: 1 }, { unique: true });
 
+//for lightning speed query searching habits per user.
+habitSchema.index({ userId: 1 });
 const Habit = clusterConnection.model("Habit", habitSchema);
 export default Habit;

@@ -6,7 +6,7 @@ import { createIdentityContoller } from "../controller/IdentityControllers/creat
 import { getAllIdentities } from "../controller/IdentityControllers/getAllIdentityController.js";
 import { getIdentity } from "../controller/IdentityControllers/getIdentityController.js";
 import { validateObjectId } from "../Middleware/validateObjectId.js";
-import { getHabitsByIdentity } from "../controller/HabitControllers/habitController.js";
+import { getHabitsByIdentity } from "../controller/HabitControllers/getHabitsByIdentityController.js";
 
 const router = express.Router();
 
