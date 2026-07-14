@@ -1,4 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
+import mongoose from "mongoose";
 
 // Fetch habits matching identity and user constraints
 export const getHabitsByIdentity = async (req, res) => {
@@ -7,6 +8,18 @@ export const getHabitsByIdentity = async (req, res) => {
     const userId = req.user.userId || req.user.id;
     const { archived } = req.query;
 
+    if (!identityId) {
+        return res.status(400).json({
+            success: false,
+            message: "missing parameters"
+        })
+    }
+    if (!mongoose.Types.ObjectId.isValid(identityId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid identity ID format"
+        });
+    }
     // To hide archived habits from the main dashboard by default, while allowing the client to fetch them via query parameters for historical views.
     const filter = {
         identityId,
