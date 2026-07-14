@@ -1,0 +1,38 @@
+import Habit from "../../schema/habitSchema.js";
+
+// DELETE /api/habits
+export const deleteBulkHabits = async (req, res) => {
+    // Extract parameters from request body and token
+    const { habitIds } = req.body;
+    const userId = req.user.userId || req.user.id;
+
+    // validate that habitIds is a non-empty array
+    if (!habitIds || !Array.isArray(habitIds) || habitIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "habitIds must be a non-empty array"
+        });
+    }
+
+    try {
+        // Why don't we use a loop to iterate all the habitIds? 
+        // To execute a single atomic batch operation instead of triggering multiple expensive database round-trips.
+        const result = await Habit.deleteMany({ _id: { $in: habitIds }, userId });
+
+        // Return success response with processed count
+        return res.status(200).json({
+            success: true,
+            message: "Selected habits processed successfully",
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        // Log the internal error stack trace
+        console.error("error occurred while deleting habits:", error.message);
+
+        // Return clean internal server error response
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+        });
+    }
+};

@@ -6,11 +6,13 @@ import { createHabitController } from "../controller/HabitControllers/createHabi
 import { validateObjectId } from "../Middleware/validateObjectId.js";
 import { getHabitById } from "../controller/HabitControllers/getHabitByIdController.js";
 import { getAllUserHabits } from "../controller/HabitControllers/getAllHabitsController.js";
+import { deleteBulkHabits } from "../controller/HabitControllers/deleteHabitController.js";
 
 const router = express.Router();
 
 router.post("/", authenticateJWT, validate(habitNameSchema), createHabitController);
 router.get("/", authenticateJWT, getAllUserHabits);
 router.get("/:id", authenticateJWT, validateObjectId, getHabitById);
+router.delete("/", authenticateJWT, deleteBulkHabits);
 
 export default router;
