@@ -1,6 +1,6 @@
 import Identity from "../../schema/identitySchema.js";
 
-//------------------------END point = POST /api/identity/create-identity -----------
+// POST /api/identities
 // ------ called middleware authenticateJWT to allow onlyverifed user to create-----
 export const createIdentityContoller = async (req, res) => {
     const { name } = req.body;

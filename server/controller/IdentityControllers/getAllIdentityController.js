@@ -1,7 +1,7 @@
 import Identity from "../../schema/identitySchema.js";
 
 
-//--------- END Point GET /api/identity/get-all-indetities ------------
+// GET /api/identities
 //--------- Middleware : authenticateJWT ------------------------
 export const getAllIdentities = async (req, res) => {
     const { userId } = req.user;

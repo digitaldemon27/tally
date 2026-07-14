@@ -1,6 +1,7 @@
 import Identity from "../../schema/identitySchema.js";
+import { validateObjectId } from "../../utils/validation.js";
 
-// ----------- END POINT : GET /api/identity/:id ------------------
+// GET /api/identities/:id
 // ----------- Middleware : authenticateJWT -----------------------
 
 export const getIdentity = async (req, res) => {
@@ -13,12 +14,9 @@ export const getIdentity = async (req, res) => {
         id = id.trim();
     }
 
-    // Validate if the ID is a valid 24-character hexadecimal MongoDB ObjectId
-    if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid identity ID format"
-        });
+    // validate that the id parameter is a valid 24-character hexadecimal MongoDB ObjectId
+    if (!validateObjectId(id, res, "identity")) {
+        return;
     }
 
     try {

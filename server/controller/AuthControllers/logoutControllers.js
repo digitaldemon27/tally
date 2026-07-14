@@ -2,6 +2,7 @@ import redisClient from "../../config/redisConfig.js";
 import { sessionKey, sessionsSetKey, deadTokenKey } from "../../services/sessionService.js";
 import jwt from "jsonwebtoken";
 
+// POST /api/auth/logout
 export const logoutFromOnedevice = async (req, res) => {
     // read from the refresh token cookie instead of req.user because this route has no authenticateJWT middleware
     const token = req.cookies?.refreshToken || req.cookies?.refresh_token;
@@ -68,6 +69,7 @@ export const logoutFromOnedevice = async (req, res) => {
 }
 
 
+// POST /api/auth/logout-all
 export const logoutFromAllDevices = async (req, res) => {
     //this controller hits after the auth middleware so req.user has userId and sessionId
     const { userId } = req.user;

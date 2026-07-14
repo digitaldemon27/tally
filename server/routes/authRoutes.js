@@ -12,12 +12,12 @@ import { setPasswordSchema } from "../validators/setPasswordValidator.js";
 
 const router = express.Router();
 
-router.post("/sign-up", validate(signupSchema), registerUser);
+router.post("/register", validate(signupSchema), registerUser);
 router.post("/verify-token", verifyTokenStatus);
 router.post("/set-password", validate(setPasswordSchema), setPassword);
 router.post("/refresh", refreshToken);
-router.post("/logout-from-current-device", logoutFromOnedevice);
-router.post("/logout-from-all", authenticateJWT, logoutFromAllDevices);
+router.post("/logout", logoutFromOnedevice);
+router.post("/logout-all", authenticateJWT, logoutFromAllDevices);
 router.post("/login", login);
 
 export default router;

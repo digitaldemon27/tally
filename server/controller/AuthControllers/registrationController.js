@@ -6,7 +6,7 @@ import { generateToken } from "../../services/tokenService.js";
 
 
 //----- Registering the new user -------------------
-//----- Route : POST /api/auth/sign-up -------------
+//----- Route : POST /api/auth/register -------------
 
 export const registerUser = async (req, res) => {
     const email = req.body.email?.trim().toLowerCase();

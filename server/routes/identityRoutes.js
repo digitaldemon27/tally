@@ -5,9 +5,16 @@ import { identityNameSchema } from "../validators/identityValidator.js";
 import { createIdentityContoller } from "../controller/IdentityControllers/createIdentityController.js"
 import { getAllIdentities } from "../controller/IdentityControllers/getAllIdentityController.js";
 import { getIdentity } from "../controller/IdentityControllers/getIdentityController.js";
+import { validateObjectId } from "../Middleware/validateObjectId.js";
+import { getHabitsByIdentity } from "../controller/HabitControllers/habitController.js";
+
 const router = express.Router();
 
-router.post("/create-identity", authenticateJWT, validate(identityNameSchema), createIdentityContoller);
-router.get("/get-all-indetities", authenticateJWT, getAllIdentities);
-router.get("/get-identity/:id", authenticateJWT, getIdentity);
-export default router
+router.post("/", authenticateJWT, validate(identityNameSchema), createIdentityContoller);
+router.get("/", authenticateJWT, getAllIdentities);
+router.get("/:id", authenticateJWT, getIdentity);
+
+// Get all habits for a specific identity
+router.get("/:identityId/habits", authenticateJWT, validateObjectId, getHabitsByIdentity);
+
+export default router;
