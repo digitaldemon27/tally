@@ -4,10 +4,17 @@ import Habit from "../../schema/habitSchema.js";
 export const getAllUserHabits = async (req, res) => {
     // Extract parameters from request
     const userId = req.user.userId || req.user.id;
+    const { archived } = req.query;
+
+    //To hide archived habits from the main dashboard by default, while allowing the client to fetch them via query parameters for historical views.
+    const filter = {
+        userId,
+        isArchived: archived === 'true'
+    };
 
     try {
         // Fetch all habits belonging to the authenticated user
-        const habits = await Habit.find({ userId });
+        const habits = await Habit.find(filter);
 
         // Return successful response with habits array
         return res.status(200).json(habits);

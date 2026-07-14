@@ -8,12 +8,14 @@ import { getIdentity } from "../controller/IdentityControllers/getIdentityContro
 import { validateObjectId } from "../Middleware/validateObjectId.js";
 import { getHabitsByIdentity } from "../controller/HabitControllers/getHabitsByIdentityController.js";
 import { deleteBulkIdentities } from "../controller/IdentityControllers/deleteIdentityController.js";
+import { updateIdentity } from "../controller/IdentityControllers/updateIdentityController.js";
 
 const router = express.Router();
 
 router.post("/", authenticateJWT, validate(identityNameSchema), createIdentityContoller);
 router.get("/", authenticateJWT, getAllIdentities);
 router.get("/:id", authenticateJWT, getIdentity);
+router.patch("/:id", authenticateJWT, validateObjectId, updateIdentity);
 router.delete("/", authenticateJWT, deleteBulkIdentities);
 
 // Get all habits for a specific identity

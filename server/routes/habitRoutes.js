@@ -7,12 +7,16 @@ import { validateObjectId } from "../Middleware/validateObjectId.js";
 import { getHabitById } from "../controller/HabitControllers/getHabitByIdController.js";
 import { getAllUserHabits } from "../controller/HabitControllers/getAllHabitsController.js";
 import { deleteBulkHabits } from "../controller/HabitControllers/deleteHabitController.js";
+import { archiveHabitToggle } from "../controller/HabitControllers/archiveHabitController.js";
+import { updateHabit } from "../controller/HabitControllers/updateHabitController.js";
 
 const router = express.Router();
 
 router.post("/", authenticateJWT, validate(habitNameSchema), createHabitController);
 router.get("/", authenticateJWT, getAllUserHabits);
 router.get("/:id", authenticateJWT, validateObjectId, getHabitById);
+router.patch("/:id", authenticateJWT, validateObjectId, updateHabit);
+router.patch("/:id/archive", authenticateJWT, validateObjectId, archiveHabitToggle);
 router.delete("/", authenticateJWT, deleteBulkHabits);
 
 export default router;
