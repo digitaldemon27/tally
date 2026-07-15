@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
 import Identity from "../../schema/identitySchema.js";
 import Habit from "../../schema/habitSchema.js";
+import mongoose from "mongoose"; // ADDED: needed for ObjectId validation
 
 // DELETE /api/identities
 export const deleteBulkIdentities = async (req, res) => {
@@ -8,62 +8,47 @@ export const deleteBulkIdentities = async (req, res) => {
     const { identityIds } = req.body;
     const userId = req.user.userId || req.user.id;
 
-    // validate that identityIds is provided
-    if (identityIds === undefined || identityIds === null) {
+    // validate that identityIds is a non-empty array
+    if (!identityIds || !Array.isArray(identityIds) || identityIds.length === 0) {
         return res.status(400).json({
             success: false,
-            message: "identityIds is required"
+            message: "identityIds must be a non-empty array"
         });
     }
 
-    // validate that identityIds is a native JavaScript Array
-    if (!Array.isArray(identityIds)) {
+    // Validate that EVERY item in the array is a valid MongoDB format.
+    // If even one is malformed (e.g., "123"), Mongoose will crash the whole batch operation.
+    const hasInvalidId = identityIds.some(id => typeof id !== 'string' || !mongoose.Types.ObjectId.isValid(id));
+    if (hasInvalidId) {
         return res.status(400).json({
             success: false,
-            message: "identityIds must be an array"
+            message: "One or more identity IDs are in an invalid format"
         });
     }
-
-    // validate that identityIds is not empty
-    if (identityIds.length === 0) {
-        return res.status(400).json({
-            success: false,
-            message: "At least one identity ID must be provided"
-        });
-    }
-
-    // validate structural integrity of each ID
-    for (const id of identityIds) {
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid identity ID format: ${id}`
-            });
-        }
-    }
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
 
     try {
-        const identityResult = await Identity.deleteMany({ _id: { $in: identityIds }, userId }, { session });
+        // delete the child habits first to prevent orphaned records if the connection drops midway
+        await Habit.deleteMany({ identityId: { $in: identityIds }, userId });
 
-        // Cascading deletion of all habits tied to these identities
-        const habitResult = await Habit.deleteMany({ identityId: { $in: identityIds }, userId }, { session });
+        // not using a loop to iterate all the identityIds , executing a single atomic batch operation instead of triggering multiple expensive database round-trips.
+        const result = await Identity.deleteMany({ _id: { $in: identityIds }, userId });
 
-        // To enforce atomic cascading deletes, ensuring that either both identities and their sub-habits are cleared or none are if a crash occurs we used transaction
-        await session.commitTransaction();
+        // Handle the case where the IDs are correctly formatted, but none exist in the DB 
+        // OR they exist but belong to a different user (middleware userId mismatch).
+        if (result.deletedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No matching identities found to delete"
+            });
+        }
 
-        // Return success response with processed counts
+        // Return success response with processed count
         return res.status(200).json({
             success: true,
-            message: "Identities and associated habits processed successfully",
-            deletedIdentitiesCount: identityResult.deletedCount,
-            deletedHabitsCount: habitResult.deletedCount
+            message: "Selected identities processed successfully",
+            deletedCount: result.deletedCount // Will show exactly how many were actually deleted
         });
-    } catch (error) { // merged duplicated catch blocks into one
-        await session.abortTransaction();
-
+    } catch (error) {
         // Log the internal error stack trace
         console.error("error occurred while deleting identities:", error.message);
 
@@ -72,7 +57,5 @@ export const deleteBulkIdentities = async (req, res) => {
             success: false,
             message: "internal server error"
         });
-    } finally { // moved to single finally block to prevent executing session.endSession() twice
-        session.endSession();
     }
 };

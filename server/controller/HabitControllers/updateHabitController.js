@@ -1,4 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
+import mongoose from "mongoose";
 
 // PATCH /api/habits/:id
 export const updateHabit = async (req, res) => {
@@ -6,14 +7,17 @@ export const updateHabit = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId || req.user.id;
 
+    //Validate MongoDB ObjectId format to prevent CastError server crashes
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid habit ID format"
+        });
+    }
     // Extract allowed fields
-    const { name, targetFrequency, tinyHabitVersion, stackingAnchor, environmentNote } = req.body;
+    const { name } = req.body;
     const updateFields = {};
     if (name !== undefined) updateFields.name = name;
-    if (targetFrequency !== undefined) updateFields.targetFrequency = targetFrequency;
-    if (tinyHabitVersion !== undefined) updateFields.tinyHabitVersion = tinyHabitVersion;
-    if (stackingAnchor !== undefined) updateFields.stackingAnchor = stackingAnchor;
-    if (environmentNote !== undefined) updateFields.environmentNote = environmentNote;
 
     // Check if payload is completely empty
     if (Object.keys(updateFields).length === 0) {
@@ -34,6 +38,14 @@ export const updateHabit = async (req, res) => {
                 });
             }
 
+            // Check if the new name matches the current name to prevent an extra write operation
+            if (existingHabitToUpdate.name === updateFields.name.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "New name must be different from the currently saved name"
+                });
+            }
+
             const duplicateHabit = await Habit.findOne({
                 identityId: existingHabitToUpdate.identityId,
                 name: updateFields.name.trim(),
@@ -51,7 +63,7 @@ export const updateHabit = async (req, res) => {
             updateFields.name = updateFields.name.trim();
         }
 
-        // Q: dynamically building an updateFields object and use $set ,To perform a strict partial update, ensuring we only overwrite the specific fields the user wants to change without nullifying the rest of the document.
+        //dynamically building an updateFields object and use $set ,To perform a strict partial update, ensuring we only overwrite the specific fields the user wants to change without nullifying the rest of the document.
         const updatedHabit = await Habit.findOneAndUpdate(
             { _id: id, userId },
             { $set: updateFields },
@@ -73,6 +85,12 @@ export const updateHabit = async (req, res) => {
             habit: updatedHabit
         });
     } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
         // Log the internal error stack trace
         console.error("error occurred while updating habit:", error.message);
 

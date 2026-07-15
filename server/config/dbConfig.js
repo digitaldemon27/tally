@@ -37,6 +37,7 @@ export const connectDB = async () => {
 
         // Try to connect if we aren't 
         await clusterConnection.asPromise();
+        console.log("ready state of the DB : ", clusterConnection.readyState);
         return clusterConnection;
 
     } catch (error) {

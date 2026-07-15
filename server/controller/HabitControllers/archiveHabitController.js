@@ -1,4 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
+import mongoose from "mongoose";
 
 // PATCH /api/habits/:id/archive
 export const archiveHabitToggle = async (req, res) => {
@@ -6,6 +7,22 @@ export const archiveHabitToggle = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId || req.user.id;
     const { isArchived } = req.body;
+
+    //Validate MongoDB ObjectId format to prevent CastError server crashes
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid habit ID format"
+        });
+    }
+
+    // Explicitly handle when nothing is sent in the body (undefined)
+    if (isArchived === undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "isArchived field is required in the request body"
+        });
+    }
 
     if (typeof isArchived !== 'boolean') {
         return res.status(400).json({
@@ -15,6 +32,23 @@ export const archiveHabitToggle = async (req, res) => {
     }
 
     try {
+        // Check current status to prevent unnecessary extra write operations
+        const existingHabit = await Habit.findOne({ _id: id, userId });
+
+        if (!existingHabit) {
+            return res.status(404).json({
+                success: false,
+                message: "habit not found"
+            });
+        }
+
+        if (existingHabit.isArchived === isArchived) {
+            return res.status(400).json({
+                success: false,
+                message: `Habit is already ${isArchived ? 'archived' : 'unarchived'}`
+            });
+        }
+
         // Run update to toggle habit archive status
         const updatedHabit = await Habit.findOneAndUpdate(
             { _id: id, userId },
