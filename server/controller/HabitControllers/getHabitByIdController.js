@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import mongoose from "mongoose";
+import { validateObjectId } from "../../utils/validation.js";
 
 // GET /api/habits/:id
 export const getHabitById = async (req, res) => {
@@ -8,12 +8,7 @@ export const getHabitById = async (req, res) => {
     const userId = req.user.userId || req.user.id;
 
     //if habitId is not in the format of the mongoDB objectId , why to pay cost of hitting query before validation??
-    if (!mongoose.Types.ObjectId.isValid(habitId)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid habit ID format"
-        });
-    }
+    if (!validateObjectId(habitId, res, "habit")) return;
     try {
         // Fetch single habit matching habit ID and user constraints
         const habit = await Habit.findOne({ _id: habitId, userId });

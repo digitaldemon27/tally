@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import mongoose from "mongoose"; // ADDED: needed for ObjectId validation
+import { isValidObjectId } from "../../utils/validation.js";
 
 // DELETE /api/habits
 export const deleteBulkHabits = async (req, res) => {
@@ -17,7 +17,7 @@ export const deleteBulkHabits = async (req, res) => {
 
     // Validate that EVERY item in the array is a valid MongoDB format.
     // If even one is malformed (e.g., "123"), Mongoose will crash the whole batch operation.
-    const hasInvalidId = habitIds.some(id => typeof id !== 'string' || !mongoose.Types.ObjectId.isValid(id));
+    const hasInvalidId = habitIds.some(id => !isValidObjectId(id));
     if (hasInvalidId) {
         return res.status(400).json({
             success: false,

@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import mongoose from "mongoose";
+import { validateObjectId } from "../../utils/validation.js";
 
 // GET /api/habits
 export const getAllUserHabits = async (req, res) => {
@@ -17,12 +17,7 @@ export const getAllUserHabits = async (req, res) => {
     // If accessed via nested route, filter by identityId
     if (identityId) {
         // Check if the parameter matches MongoDB's 24-character hex format
-        if (!mongoose.Types.ObjectId.isValid(identityId)) {
-            return res.status(400).json({
-                success: false,
-                message: "invalid identityId format"
-            });
-        }
+        if (!validateObjectId(identityId, res, "identity")) return;
 
         //if identityId is valid append it to the filter for the query
         filter.identityId = identityId;

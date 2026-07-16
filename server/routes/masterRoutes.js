@@ -2,7 +2,7 @@ import express from "express"
 import authRoutes from "./authRoutes.js"
 import habitRoutes from "./habitRoutes.js"
 import identityRoutes from "./identityRoutes.js";
-import voteRoutes from "./vote.routes.js";
+import voteRoutes from "./voteRoutes.js";
 const masterRoutes = express.Router();
 
 // Login - sign up routes

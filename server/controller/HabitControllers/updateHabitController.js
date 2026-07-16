@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import mongoose from "mongoose";
+import { validateObjectId } from "../../utils/validation.js";
 
 // PATCH /api/habits/:id
 export const updateHabit = async (req, res) => {
@@ -8,12 +8,7 @@ export const updateHabit = async (req, res) => {
     const userId = req.user.userId || req.user.id;
 
     //Validate MongoDB ObjectId format to prevent CastError server crashes
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid habit ID format"
-        });
-    }
+    if (!validateObjectId(id, res, "habit")) return;
     // Extract allowed fields
     const { name } = req.body;
     const updateFields = {};

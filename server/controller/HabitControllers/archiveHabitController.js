@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import mongoose from "mongoose";
+import { validateObjectId } from "../../utils/validation.js";
 
 // PATCH /api/habits/:id/archive
 export const archiveHabitToggle = async (req, res) => {
@@ -9,12 +9,7 @@ export const archiveHabitToggle = async (req, res) => {
     const { isArchived } = req.body;
 
     //Validate MongoDB ObjectId format to prevent CastError server crashes
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid habit ID format"
-        });
-    }
+    if (!validateObjectId(id, res, "habit")) return;
 
     // Explicitly handle when nothing is sent in the body (undefined)
     if (isArchived === undefined) {

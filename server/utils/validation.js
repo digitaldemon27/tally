@@ -16,3 +16,13 @@ export const validateObjectId = (id, res, entityName = "identity") => {
     }
     return true;
 };
+
+/**
+ * Pure boolean ObjectId format check — no response side-effect.
+ * Use inside array iterations (.some(), .every()) or any place where
+ * sending a response directly would be inappropriate.
+ * 
+ * @param {string} id
+ * @returns {boolean}
+ */
+export const isValidObjectId = (id) => typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
