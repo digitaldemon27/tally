@@ -1,6 +1,7 @@
 import HabitLog from "../../schema/habitLogSchema.js";
 import mongoose from "mongoose";
 import { validateObjectId } from "../../utils/validation.js";
+import { computeMissedYesterday } from "./nmtStatusController.js";
 
 // GET /votes/summary
 export const getVoteSummary = async (req, res) => {
@@ -42,7 +43,7 @@ export const getVoteSummary = async (req, res) => {
                 $facet: {
                     last7Days: [
                         { $match: { date: { $gte: sevenDaysAgo } } },
-                        { $count: "count" }
+                        { $project: { _id: 0, date: 1 } }
                     ],
                     last30Days: [
                         { $count: "count" }
@@ -52,13 +53,17 @@ export const getVoteSummary = async (req, res) => {
         ]);
 
         // Unwrap safely with null coalescing — a non-existent or non-owned habitId naturally resolves to 0, not an error.
-        const weeklyCount = result[0].last7Days[0]?.count ?? 0;
+        const last7DaysLogs = result[0].last7Days || [];
+        const weeklyCount = last7DaysLogs.length;
         const monthlyCount = result[0].last30Days[0]?.count ?? 0;
+
+        const missedYesterday = computeMissedYesterday(last7DaysLogs);
 
         return res.status(200).json({
             success: true,
             weeklyCount,
-            monthlyCount
+            monthlyCount,
+            missedYesterday
         });
 
     } catch (error) {
