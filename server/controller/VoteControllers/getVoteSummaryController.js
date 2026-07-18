@@ -1,4 +1,5 @@
 import HabitLog from "../../schema/habitLogSchema.js";
+import Habit from "../../schema/habitSchema.js";
 import mongoose from "mongoose";
 import { validateObjectId } from "../../utils/validation.js";
 import { computeMissedYesterday } from "./nmtStatusController.js";
@@ -34,6 +35,15 @@ export const getVoteSummary = async (req, res) => {
         const habitObjectId = new mongoose.Types.ObjectId(habitId);
         const userObjectId = new mongoose.Types.ObjectId(userId);
 
+        // Fetch habit to get createdAt for rolling consistency computation and also validate ownership.
+        const habit = await Habit.findOne({ _id: habitId, userId });
+        if (!habit) {
+            return res.status(404).json({
+                success: false,
+                message: "Habit not found or does not belong to the user"
+            });
+        }
+
         const result = await HabitLog.aggregate([
             { $match: { userId: userObjectId, habitId: habitObjectId } }, // no date bound — need all-time data
             {
@@ -60,12 +70,28 @@ export const getVoteSummary = async (req, res) => {
 
         const missedYesterday = computeMissedYesterday(last7DaysLogs);
 
+        // Compute Rolling Consistency
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        const createdDate = new Date(habit.createdAt);
+        createdDate.setUTCHours(0, 0, 0, 0);
+
+        // Compute difference in full calendar days
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const daysBetween = Math.max(0, Math.floor((today.getTime() - createdDate.getTime()) / msPerDay));
+
+        // activeDays is capped at 30, and +1 makes it inclusive of the creation day (never 0)
+        const activeDays = Math.min(30, daysBetween + 1);
+        const rollingConsistency = Math.round((monthlyCount / activeDays) * 100);
+
         return res.status(200).json({
             success: true,
             totalVotes,
             weeklyCount,
             monthlyCount,
-            missedYesterday
+            missedYesterday,
+            rollingConsistency
         });
 
     } catch (error) {

@@ -3,6 +3,7 @@ import authRoutes from "./authRoutes.js"
 import habitRoutes from "./habitRoutes.js"
 import identityRoutes from "./identityRoutes.js";
 import voteRoutes from "./voteRoutes.js";
+import scorecardRoutes from "./scorecardRoutes.js";
 const masterRoutes = express.Router();
 
 // Login - sign up routes
@@ -10,5 +11,6 @@ masterRoutes.use("/auth", authRoutes);
 masterRoutes.use("/habits", habitRoutes);
 masterRoutes.use("/identity", identityRoutes);
 masterRoutes.use("/votes", voteRoutes);
+masterRoutes.use("/scorecard", scorecardRoutes);
 
 export default masterRoutes;
