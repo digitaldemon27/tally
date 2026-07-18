@@ -31,21 +31,21 @@ export const getVoteSummary = async (req, res) => {
 
     try {
         // casting to ObjectId because aggregation pipelines bypass Mongoose type coercion — without this, the string would never match a BSON ObjectId stored in DB
+        const habitObjectId = new mongoose.Types.ObjectId(habitId);
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
         const result = await HabitLog.aggregate([
-            {
-                $match: {
-                    userId: new mongoose.Types.ObjectId(userId),
-                    habitId: new mongoose.Types.ObjectId(habitId),
-                    date: { $gte: thirtyDaysAgo }
-                }
-            },
+            { $match: { userId: userObjectId, habitId: habitObjectId } }, // no date bound — need all-time data
             {
                 $facet: {
                     last7Days: [
-                        { $match: { date: { $gte: sevenDaysAgo } } },
-                        { $project: { _id: 0, date: 1 } }
+                        { $match: { date: { $gte: sevenDaysAgo } } }
                     ],
                     last30Days: [
+                        { $match: { date: { $gte: thirtyDaysAgo } } },
+                        { $count: "count" }
+                    ],
+                    allTime: [
                         { $count: "count" }
                     ]
                 }
@@ -53,14 +53,16 @@ export const getVoteSummary = async (req, res) => {
         ]);
 
         // Unwrap safely with null coalescing — a non-existent or non-owned habitId naturally resolves to 0, not an error.
-        const last7DaysLogs = result[0].last7Days || [];
+        const last7DaysLogs = result[0].last7Days ?? [];
         const weeklyCount = last7DaysLogs.length;
         const monthlyCount = result[0].last30Days[0]?.count ?? 0;
+        const totalVotes = result[0].allTime[0]?.count ?? 0;
 
         const missedYesterday = computeMissedYesterday(last7DaysLogs);
 
         return res.status(200).json({
             success: true,
+            totalVotes,
             weeklyCount,
             monthlyCount,
             missedYesterday
