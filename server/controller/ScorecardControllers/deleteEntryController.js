@@ -9,9 +9,8 @@ export const deleteEntryController = async (req, res) => {
     // Validate entryId is a syntactically valid MongoDB ObjectId before hitting the DB
     if (!validateObjectId(entryId, res, "entry")) return;
 
-    // Only today's entries can be deleted
-    const todayNormalized = new Date();
-    todayNormalized.setUTCHours(0, 0, 0, 0);
+    // only today's entries can be deleted — use timezone-aware today from middleware
+    const todayNormalized = req.todayForUser;
 
     try {
         // Single combined delete: checks ownership, existence, and same-day constraint all at once

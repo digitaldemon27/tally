@@ -6,9 +6,8 @@ export const createEntryController = async (req, res) => {
     const { note, label } = req.body;
     const userId = req.user.id || req.user.userId;
 
-    // Compute today's date server-side, normalized to midnight UTC — never trust client for this
-    const date = new Date();
-    date.setUTCHours(0, 0, 0, 0);
+    // date is computed server-side using the user's timezone (injected by requireTimezone middleware) — never trust client for this
+    const date = req.todayForUser;
 
     try {
         // Duplicates are allowed by design — no uniqueness check before creating

@@ -41,10 +41,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  local_time_zone: {
-    type: String,
-    default: "UTC"
-  },
   hashed_password: {
     type: String,
     //added select: false so the hashed password is not leaked in default queries

@@ -1,27 +1,25 @@
 import ScorecardEntry from "../../schema/ScorecardEntry.js";
 import User from "../../schema/userSchema.js";
+import { getDateInUserTimezoneUTC } from "../../utils/getUserMidnightUTC.js";
 
 // GET /scorecard/:date
 export const getByDateController = async (req, res) => {
     const userId = req.user.id || req.user.userId;
 
-    // Step 1: Parse the raw date string from the route param
-    const parsedDate = new Date(req.params.date);
+    // Step 1: Parse the date string from the route param in the user's timezone
+    // getDateInUserTimezoneUTC handles both parse and validate in one call — returns null if the date string or timezone is bad
+    const parsedDate = getDateInUserTimezoneUTC(req.params.date, req.timezone);
 
-    // Step 2: Reject right away if the date string wasn't parseable at all
-    if (isNaN(parsedDate.getTime())) {
+    // Step 2: Reject if the date string wasn't valid
+    if (!parsedDate) {
         return res.status(400).json({
             success: false,
             message: "Invalid date"
         });
     }
 
-    // Step 3: Normalize the parsed date to midnight UTC — must match how date is stored everywhere else
-    parsedDate.setUTCHours(0, 0, 0, 0);
-
-    // Step 4: Compute upper bound (today)
-    const todayNormalized = new Date();
-    todayNormalized.setUTCHours(0, 0, 0, 0);
+    // Step 3: Use the timezone-aware today already computed by requireTimezone middleware as the upper bound
+    const todayNormalized = req.todayForUser;
 
     try {
         // Step 5: Fetch the user's account creation date — needed to enforce the lower bound.

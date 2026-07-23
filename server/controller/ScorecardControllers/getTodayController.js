@@ -4,9 +4,8 @@ import ScorecardEntry from "../../schema/ScorecardEntry.js";
 export const getTodayController = async (req, res) => {
     const userId = req.user.id || req.user.userId;
 
-    // Compute today's date server-side — never trust the client for what "today" means
-    const todayNormalized = new Date();
-    todayNormalized.setUTCHours(0, 0, 0, 0);
+    // use timezone-aware today from middleware — never recompute this manually in the controller
+    const todayNormalized = req.todayForUser;
 
     try {
         // Fetch all of today's entries, sorted by when they were created so they appear in log order

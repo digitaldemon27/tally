@@ -11,15 +11,15 @@ import { generateAccessToken, generateRefreshToken, hashToken } from "../../serv
 
 //endpoint : POST /api/set-password
 export const setPassword = async (req, res) => {
-    const { signupToken, password, timezone } = req.body;
+    const { signupToken, password } = req.body;
 
     try {
 
         //if any of the field is missing
-        if (!signupToken || !password || !timezone) {
+        if (!signupToken || !password) {
             return res.status(400).json({
                 success: false,
-                message: "signupToken , password and timezone are required",
+                message: "signupToken and password are required",
             });
         }
 
@@ -45,7 +45,6 @@ export const setPassword = async (req, res) => {
             username,
             email,
             hashed_password: hashedPassword,
-            local_time_zone: timezone,
             is_email_verified: true
         });
 
@@ -110,8 +109,7 @@ export const setPassword = async (req, res) => {
             accessToken,
             user: {
                 username: newUser.username,
-                email: newUser.email,
-                timezone: newUser.local_time_zone
+                email: newUser.email
             }
         });
 

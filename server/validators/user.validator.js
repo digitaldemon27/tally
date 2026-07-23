@@ -38,10 +38,6 @@ export const userRegisterValidator = z.object({
   password: z
     .string({ required_error: "Password is required" })
     .min(6, "Password must be at least 6 characters long"),
-  local_time_zone: z
-    .string()
-    .default("UTC")
-    .optional(),
 });
 
 /**

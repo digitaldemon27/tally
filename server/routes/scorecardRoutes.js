@@ -7,16 +7,17 @@ import { editEntryController } from "../controller/ScorecardControllers/editEntr
 import { deleteEntryController } from "../controller/ScorecardControllers/deleteEntryController.js";
 import { getTodayController } from "../controller/ScorecardControllers/getTodayController.js";
 import { getByDateController } from "../controller/ScorecardControllers/getByDateController.js";
+import { requireTimezone } from "../Middleware/requireTimezone.js";
 
 const router = express.Router();
 
-router.post("/", authenticateJWT, validate(createEntrySchema), createEntryController);
-router.patch("/:entryId", authenticateJWT, validate(editEntrySchema), editEntryController);
-router.delete("/:entryId", authenticateJWT, deleteEntryController);
+router.post("/", authenticateJWT, requireTimezone, validate(createEntrySchema), createEntryController);
+router.patch("/:entryId", authenticateJWT, requireTimezone, validate(editEntrySchema), editEntryController);
+router.delete("/:entryId", authenticateJWT, requireTimezone, deleteEntryController);
 
 // /today MUST be registered before /:date — Express matches top-to-bottom, and /:date would capture
 // the literal string "today" as a param value if this order were reversed, breaking this route entirely.
-router.get("/today", authenticateJWT, getTodayController);
-router.get("/:date", authenticateJWT, getByDateController);
+router.get("/today", authenticateJWT, requireTimezone, getTodayController);
+router.get("/:date", authenticateJWT, requireTimezone, getByDateController);
 
 export default router;

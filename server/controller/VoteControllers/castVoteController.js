@@ -23,9 +23,8 @@ export const castVote = async (req, res) => {
             });
         }
 
-        // Compute date server-side: new Date(); date.setUTCHours(0,0,0,0) as mentioned in the schema must be in the formate of mid night UTC
-        const date = new Date();
-        date.setUTCHours(0, 0, 0, 0);
+        // date is computed server-side using the user's timezone (injected by requireTimezone middleware) — never trust client for this
+        const date = req.todayForUser;
 
         // Create HabitLog
         const newVote = await HabitLog.create({

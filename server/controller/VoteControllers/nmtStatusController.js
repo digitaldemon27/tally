@@ -1,20 +1,15 @@
 //computing NMT here instead of a separate query ,To avoid an extra database round-trip by reusing the already-fetched last 7 days aggregation results.
 
-export const computeMissedYesterday = (last7DaysLogs) => {
-    // We normalize to UTC midnight to safely compare against DB dates which are stored normalized.
-    const todayNormalized = new Date();
-    todayNormalized.setUTCHours(0, 0, 0, 0);
+// accepts todayForUser (already computed by requireTimezone middleware or caller)
+// so we don't recompute "today" internally — whoever calls this decides what "today" is
+export const computeMissedYesterday = (last7DaysLogs, todayForUser) => {
+    const todayTime = todayForUser.getTime();
 
-    const yesterdayNormalized = new Date();
-    yesterdayNormalized.setUTCHours(0, 0, 0, 0);
-    yesterdayNormalized.setUTCDate(yesterdayNormalized.getUTCDate() - 1);
+    // yesterday = today - 1 day (same timezone-aware base, just subtract 24h in ms)
+    const yesterdayTime = todayTime - 24 * 60 * 60 * 1000;
 
-    //we cant compare to dates objects as the comparing that way will lead to comapring the address / refrence so
+    //we cant compare to dates objects as the comparing that way will lead to comparing the address / reference so
     //have to convert them into some numbers , getTime does the exact thing.
-    const todayTime = todayNormalized.getTime();
-    const yesterdayTime = yesterdayNormalized.getTime();
-
-    // The rule: missedYesterday = true ONLY IF no vote yesterday AND no vote today.
     let votedToday = false;
     let votedYesterday = false;
 
@@ -27,7 +22,8 @@ export const computeMissedYesterday = (last7DaysLogs) => {
         if (logTime === yesterdayTime) votedYesterday = true;
     }
 
-    // If they voted either today or yesterday, they haven't missed twice currently.
+    // The rule: missedYesterday = true ONLY IF no vote yesterday AND no vote today.
+    // We intentionally do not look further back than yesterday.
     if (votedToday || votedYesterday) {
         return false;
     }

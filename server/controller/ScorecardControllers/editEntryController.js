@@ -7,9 +7,8 @@ export const editEntryController = async (req, res) => {
     const { note, label } = req.body;
     const userId = req.user.id || req.user.userId;
 
-    // Compute today's date server-side — only today's entries can be edited
-    const todayNormalized = new Date();
-    todayNormalized.setUTCHours(0, 0, 0, 0);
+    // only today's entries can be edited — use timezone-aware today from middleware
+    const todayNormalized = req.todayForUser;
 
     try {
         // Single combined query: checks ownership, existence, and same-day constraint all at once
