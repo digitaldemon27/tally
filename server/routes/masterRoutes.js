@@ -5,6 +5,7 @@ import identityRoutes from "./identityRoutes.js";
 import voteRoutes from "./voteRoutes.js";
 import scorecardRoutes from "./scorecardRoutes.js";
 import buddyRoutes from "./buddy.routes.js";
+import aiSuggestionsRoutes from "./AISuggestionsRoutes.js";
 const masterRoutes = express.Router();
 
 // Login - sign up routes
@@ -14,5 +15,6 @@ masterRoutes.use("/identity", identityRoutes);
 masterRoutes.use("/votes", voteRoutes);
 masterRoutes.use("/scorecard", scorecardRoutes);
 masterRoutes.use("/buddy", buddyRoutes);
+masterRoutes.use("/ai-suggestions", aiSuggestionsRoutes);
 
 export default masterRoutes;

@@ -36,4 +36,28 @@ export const validate = (schema) => {
     };
 };
 
+// same pattern as validate() but reads req.params instead of req.body
+// used for route params (e.g. :identityId) that need ObjectId or format validation
+export const validateParams = (schema) => {
+    return (req, res, next) => {
+        const result = schema.safeParse(req.params);
+
+        if (!result.success) {
+            const formattedErrors = {};
+            result.error.issues.forEach((err) => {
+                const path = err.path.join(".");
+                formattedErrors[path] = err.message;
+            });
+
+            return res.status(400).json({
+                success: false,
+                message: "Validation failed",
+                errors: formattedErrors
+            });
+        }
+
+        next();
+    };
+};
+
 export default validate;
