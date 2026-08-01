@@ -6,14 +6,27 @@ export const claimLinkController = async (req, res) => {
     const buddyUserId = req.user.id || req.user.userId;
 
     try {
-        // single atomic operation: look up by token + pending status, set buddyUserId and flip to active
+        const existing = await BuddyPairing.findOne({ token, status: "pending" });
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                message: "This invite link is invalid or no longer available."
+            });
+        }
+
+        if (existing.ownerUserId.toString() === buddyUserId.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot be your own buddy."
+            });
+        }
+
         const pairing = await BuddyPairing.findOneAndUpdate(
             { token, status: "pending" },
             { buddyUserId, status: "active" },
             { new: true }
         );
 
-        // null here means the token doesn't exist OR it was already claimed before
         if (!pairing) {
             return res.status(409).json({
                 success: false,
@@ -24,15 +37,14 @@ export const claimLinkController = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Buddy link claimed successfully",
-            identityId: pairing.identityId,
-            ownerUserId: pairing.ownerUserId
+            pairing
         });
 
     } catch (error) {
-        console.error("error occurred while claiming buddy link:", error.message);
+        console.error("Error occurred while claiming buddy link:", error.message);
         return res.status(500).json({
             success: false,
-            message: "internal server error"
+            message: "Internal server error"
         });
     }
 };

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identity — Tally</title>
+  <meta name="description" content="Manage habits and cast votes for this identity on Tally." />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="dashboard.html" class="nav-link">← Dashboard</a></li>
+          <li><a href="scorecard.html" class="nav-link">Scorecard</a></li>
+          <li><button class="btn btn-ghost" id="nav-logout-btn" type="button">Sign out</button></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section id="identity-detail" aria-labelledby="identity-detail-heading">
+      <div class="container">
+
+        <a href="dashboard.html" class="identity-back-link">← All Identities</a>
+
+        <!-- Identity header: name + description + edit/delete + aggregate stat card -->
+        <div class="identity-detail-header">
+          <div class="identity-detail-meta">
+            <p class="eyebrow" id="identity-detail-eyebrow">Identity</p>
+            <h1 class="section-title" id="identity-detail-heading" style="margin-bottom:var(--space-2);">Loading…</h1>
+            <p class="section-subtitle" id="identity-detail-description" style="margin-bottom:var(--space-4); max-width:52ch;"></p>
+            <div class="identity-detail-actions">
+              <button class="btn btn-ghost" id="edit-identity-btn"   type="button" style="display:none;">Edit identity</button>
+              <button class="btn btn-ghost btn-danger-ghost" id="delete-identity-btn" type="button" style="display:none;">Delete identity</button>
+              <button class="btn btn-secondary" id="ai-insights-btn" type="button" style="display:none; margin-left:var(--space-2);">✨ Get AI Insights</button>
+            </div>
+          </div>
+
+          <div class="identity-stat-card" aria-label="Aggregate stats for this identity">
+            <p class="card-tally__label">Total votes cast</p>
+            <p class="card-tally__count" id="identity-stat-votes" style="margin-bottom:var(--space-1);">—</p>
+            <p class="card-tally__sub">across all habits</p>
+            <div class="identity-stat-divider"></div>
+            <p class="card-tally__label">Avg. consistency</p>
+            <p class="identity-stat-consistency" id="identity-stat-consistency">—%</p>
+            <p class="card-tally__sub">trailing 30 days</p>
+          </div>
+        </div>
+
+        <!-- AI Insights Container -->
+        <div id="ai-insights-container" style="display:none; margin-bottom:var(--space-6);" class="card-tally reveal-item">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3);">
+            <h3 style="font-size:1.125rem; font-weight:600; margin:0; display:flex; align-items:center; gap:var(--space-2);">
+              <span>✨ AI Identity Insights</span>
+            </h3>
+            <button class="btn btn-ghost" id="close-ai-insights-btn" type="button" style="font-size:0.8125rem;">Dismiss</button>
+          </div>
+          <div id="ai-insights-content"></div>
+        </div>
+
+        <!-- Habits header row -->
+        <div class="identity-habits-header">
+          <h2 class="identity-habits-title">Habits</h2>
+          <div style="display:flex; align-items:center; gap:var(--space-3);">
+            <label style="font-size:0.875rem; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:var(--space-2);">
+              <input type="checkbox" id="toggle-show-archived" />
+              <span>Show archived</span>
+            </label>
+            <button class="btn btn-primary" id="open-habit-modal-btn" type="button" aria-haspopup="dialog">+ New Habit</button>
+          </div>
+        </div>
+
+        <!-- Habit list: JS renders .habit-row elements here -->
+        <div id="habit-list" role="list" aria-label="Habits in this identity"></div>
+
+        <!-- Empty state -->
+        <div class="dashboard-empty" id="habit-empty-state" style="display:none;" aria-live="polite">
+          <div class="form-success__icon" aria-hidden="true">🌱</div>
+          <h2 style="margin-bottom:var(--space-3);">No habits yet</h2>
+          <p class="text-slate" style="font-size:0.9375rem; max-width:38ch; margin-inline:auto; margin-bottom:var(--space-6);">
+            Add your first habit to this identity and start casting votes toward it.
+          </p>
+          <button class="btn btn-primary" id="open-habit-modal-empty-btn" type="button" aria-haspopup="dialog">+ New Habit</button>
+        </div>
+
+        <!-- Buddy section: rendered by initBuddySection() -->
+        <div id="buddy-section" class="buddy-section" aria-labelledby="buddy-section-title"></div>
+
+      </div>
+    </section>
+
+    <!-- Floating Action Bar for Bulk Delete -->
+    <div class="floating-action-bar" id="habit-action-bar" role="region" aria-label="Bulk actions">
+      <span class="floating-action-bar__count" id="habit-select-count">0 selected</span>
+      <div class="floating-action-bar__actions">
+        <button class="btn btn-ghost" id="habit-cancel-select-btn" type="button">Cancel</button>
+        <button class="btn btn-danger" id="habit-delete-selected-btn" type="button">Delete Selected</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- CREATE / EDIT HABIT MODAL -->
+  <div class="modal-overlay" id="habit-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="habit-modal-title" aria-hidden="true">
+    <div class="modal-panel" id="habit-modal-panel">
+      <button class="modal-close-btn" id="habit-modal-close-btn" type="button" aria-label="Close dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6"  x2="6"  y2="18"/><line x1="6"  y1="6"  x2="18" y2="18"/>
+        </svg>
+      </button>
+      <h2 class="form-title" id="habit-modal-title" style="margin-bottom:var(--space-2);">New Habit</h2>
+      <p class="form-subtitle" id="habit-modal-subtitle">Keep it concrete and actionable — something you can do today.</p>
+      <form id="habit-form" novalidate autocomplete="off">
+
+        <!-- Name -->
+        <div class="field-group" id="field-habit-name-group">
+          <label class="field-label" for="input-habit-name">
+            Habit name <span class="field-required" aria-hidden="true">*</span>
+          </label>
+          <div class="field-input-wrap">
+            <input class="field-input" type="text" id="input-habit-name" name="habit-name"
+              placeholder="e.g. Read 20 pages, Go to the gym"
+              aria-required="true" aria-describedby="error-habit-name" maxlength="50" autocomplete="off"/>
+            <span class="field-status-icon" id="icon-habit-name" aria-hidden="true"></span>
+          </div>
+          <div class="field-error" id="error-habit-name" role="alert" aria-live="polite">
+            <span class="field-error__icon" aria-hidden="true">⚠</span>
+            <span id="error-habit-name-text"></span>
+          </div>
+        </div>
+
+        <!-- Frequency — segmented control (recognition over recall; only 3 options) -->
+        <div class="field-group">
+          <p class="field-label" id="frequency-label">Frequency <span class="field-required" aria-hidden="true">*</span></p>
+          <div class="segmented-control" role="group" aria-labelledby="frequency-label">
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-frequency" value="daily" checked /><span>Every day</span>
+            </label>
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-frequency" value="weekly_3x" /><span>3× a week</span>
+            </label>
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-frequency" value="weekly_5x" /><span>5× a week</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tracking type — segmented control -->
+        <div class="field-group">
+          <p class="field-label" id="tracking-label">How you track it <span class="field-required" aria-hidden="true">*</span></p>
+          <!-- NOTE: changing trackingType after votes are logged is allowed in this mock version.
+               Real backend will need to handle backward compatibility when this changes. -->
+          <div class="segmented-control" role="group" aria-labelledby="tracking-label">
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-tracking" value="boolean" checked /><span>Done / Not done</span>
+            </label>
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-tracking" value="count" /><span>Count</span>
+            </label>
+            <label class="segmented-control__option">
+              <input type="radio" name="habit-tracking" value="duration" /><span>Duration</span>
+            </label>
+          </div>
+        </div>
+
+        <input type="hidden" id="habit-edit-id" value="" />
+
+        <div class="form-submit-row">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit" id="habit-submit-btn" disabled>Create Habit</button>
+          <div class="submit-tooltip" role="tooltip">Enter a habit name to continue</div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION MODAL (shared for identity + habit) -->
+  <div class="modal-overlay" id="confirm-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-title" aria-hidden="true">
+    <div class="modal-panel modal-panel--narrow" id="confirm-delete-panel">
+      <h2 class="form-title" id="confirm-delete-title" style="margin-bottom:var(--space-3);">Delete?</h2>
+      <p class="form-subtitle" id="confirm-delete-body" style="margin-bottom:var(--space-6);"></p>
+      <div class="confirm-delete-actions">
+        <button class="btn btn-ghost"   id="confirm-delete-cancel-btn"  type="button">Cancel</button>
+        <button class="btn btn-danger"  id="confirm-delete-confirm-btn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="dashboard.html" class="footer-link">Dashboard</a></li>
+            <li><a href="/#how-it-works"  class="footer-link">How it works</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="footer-col-title">Approach</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#" class="footer-link">Our philosophy</a></li>
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+  <script src="js/api-client.js" defer></script>
+  <script src="js/identity.js" defer></script>
+</body>
+</html>

@@ -129,6 +129,23 @@
 .family-feed .feed-item:nth-child(4) { animation-delay: 0.45s; }
 
 /* ==========================================
+   EMAIL VERIFICATION SPINNER
+   ========================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--stone-dark);
+  border-top-color: var(--moss);
+  display: inline-block;
+  animation: spin 0.8s var(--ease-in-out) infinite;
+}
+
+/* ==========================================
    REDUCED MOTION — Disable all non-essential
    ========================================== */
 @media (prefers-reduced-motion: reduce) {
@@ -164,4 +181,30 @@
     opacity: 1 !important;
     transform: none !important;
   }
+
+  /* Show spinner as a static circle — no spinning */
+  .spinner {
+    border-top-color: var(--moss);
+    animation: none;
+  }
+
+  /* Modal — skip the fade/scale, just show/hide */
+  .modal-overlay,
+  .modal-panel {
+    transition: none !important;
+  }
 }
+
+/* ============================================================
+   VOTE-CAST — dignified, ballot-metaphor positive feedback.
+   Triggered by JS adding .vote-casting to the .vote-btn element.
+   Scale slightly past 1 then settle — feels earned, not gamified.
+   ============================================================ */
+@keyframes vote-cast {
+  0%   { transform: scale(1);    }
+  35%  { transform: scale(1.14); }
+  65%  { transform: scale(0.97); }
+  100% { transform: scale(1);    }
+}
+
+

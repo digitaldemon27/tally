@@ -23,7 +23,7 @@ const buddyPairingSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["pending", "active"],
+        enum: ["pending", "active", "revoked"],
         required: true,
         default: "pending" // pairing lifecycle state
     }
@@ -31,9 +31,11 @@ const buddyPairingSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Core safety mechanism: prevents more than one pairing (pending OR active) from existing for the same owner+identity.
-// This is what makes link-generation safely idempotent and race-condition-safe.
-buddyPairingSchema.index({ ownerUserId: 1, identityId: 1 }, { unique: true });
+// Partial unique index: allows only one non-revoked pairing (pending OR active) per owner+identity, while preserving revoked history.
+buddyPairingSchema.index(
+    { ownerUserId: 1, identityId: 1 },
+    { unique: true, partialFilterExpression: { status: { $ne: "revoked" } } }
+);
 
 // lookup key for the claim endpoint
 buddyPairingSchema.index({ token: 1 }, { unique: true });

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scorecard — Tally</title>
+  <meta name="description" content="Your daily Tally Scorecard — log the behaviours that shape who you're becoming." />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body id="scorecard-page">
+
+  <!-- NAV -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="dashboard.html" class="nav-link">Dashboard</a></li>
+          <li><span class="nav-link" aria-current="page">Scorecard</span></li>
+          <li><button class="btn btn-ghost" id="nav-logout-btn" type="button">Sign out</button></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <div class="scorecard-layout container">
+
+      <!-- =============================================
+           SIDEBAR — past dates
+           ============================================= -->
+      <aside class="scorecard-sidebar" aria-label="Past scorecards">
+
+        <div class="sidebar-header">
+          <h2 class="sidebar-title">History</h2>
+        </div>
+
+        <!-- 400 error from getByDateController (expected, meaningful rejection) -->
+        <div class="field-server-error" id="sidebar-error" role="alert" aria-live="polite"></div>
+
+        <!-- Date list — built by buildSidebar() in scorecard.js -->
+        <!-- TODO: consider replacing with a real calendar picker widget later -->
+        <ul class="sidebar-date-list" id="sidebar-date-list" role="list" aria-label="Select a date to view">
+          <!-- injected by buildSidebar() -->
+        </ul>
+
+      </aside>
+
+      <!-- =============================================
+           MAIN WINDOW — entries for selected date
+           ============================================= -->
+      <section class="scorecard-main" aria-labelledby="main-heading">
+
+        <!-- Loading indicator -->
+        <div class="scorecard-loading" id="main-loading" style="display:none;" aria-live="polite" aria-label="Loading entries">
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="scorecard-loading__text">Loading…</span>
+        </div>
+
+        <!-- Page-level server error banner (for 500s etc.) -->
+        <div class="field-server-error" id="main-error" role="alert" aria-live="polite"></div>
+
+        <!-- Section header: heading + Add Entry button -->
+        <div class="scorecard-main-header">
+          <div>
+            <p class="eyebrow">Daily log</p>
+            <h1 class="section-title" id="main-heading">Today's Scorecard</h1>
+            <p class="section-subtitle" id="main-subheading"></p>
+          </div>
+          <button
+            class="btn btn-primary"
+            id="open-entry-modal-btn"
+            type="button"
+            aria-haspopup="dialog"
+          >
+            + Add Entry
+          </button>
+        </div>
+
+        <!-- Entry list — built by renderTodayEntries() / renderHistoricalEntries() -->
+        <ul class="entry-list" id="entry-list" role="list" aria-label="Scorecard entries"></ul>
+
+        <!-- Empty state — shown when entries array is empty -->
+        <div class="scorecard-empty" id="entry-empty-state" style="display:none;" aria-live="polite">
+          <div class="form-success__icon" aria-hidden="true">📋</div>
+          <p class="empty-state__text">No entries yet for today — add one to start your scorecard.</p>
+          <button
+            class="btn btn-primary"
+            id="open-entry-modal-empty-btn"
+            type="button"
+            aria-haspopup="dialog"
+            style="margin-top: var(--space-4);"
+          >
+            + Add Entry
+          </button>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- =============================================
+       ADD / EDIT ENTRY MODAL
+       ============================================= -->
+  <div
+    class="modal-overlay"
+    id="entry-modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="entry-modal-title"
+    aria-hidden="true"
+  >
+    <div class="modal-panel" id="entry-modal-panel">
+
+      <button class="modal-close-btn" id="entry-modal-close-btn" type="button" aria-label="Close dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6"  y2="18"/>
+          <line x1="6"  y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <h2 class="form-title" id="entry-modal-title" style="margin-bottom:var(--space-2);">Add Entry</h2>
+      <p class="form-subtitle">Note a behaviour you observed in yourself today.</p>
+
+      <form id="entry-form" novalidate autocomplete="off">
+
+        <!-- Note field -->
+        <div class="field-group">
+          <label class="field-label" for="input-entry-note">
+            Note <span class="field-required" aria-hidden="true">*</span>
+          </label>
+          <div class="field-input-wrap">
+            <textarea
+              class="field-input field-textarea"
+              id="input-entry-note"
+              name="entry-note"
+              placeholder="e.g. Went for a run even though I didn't feel like it."
+              rows="3"
+              aria-required="true"
+              aria-describedby="error-entry-note"
+              maxlength="500"
+            ></textarea>
+          </div>
+          <div class="field-error" id="error-entry-note" style="display:none;" role="alert">
+            <span class="field-error__icon" aria-hidden="true">⚠</span>
+            <span id="entry-note-error-text"></span>
+          </div>
+        </div>
+
+        <!-- Label picker: +, −, = pill buttons (recognition over recall) -->
+        <div class="field-group">
+          <p class="field-label" id="label-picker-legend">
+            Label <span class="field-required" aria-hidden="true">*</span>
+          </p>
+          <div class="label-picker" role="group" aria-labelledby="label-picker-legend">
+            <label class="label-pill label-pill--positive">
+              <input type="radio" name="entry-label" value="positive" checked />
+              <span aria-label="Positive">+</span>
+            </label>
+            <label class="label-pill label-pill--negative">
+              <input type="radio" name="entry-label" value="negative" />
+              <span aria-label="Negative">−</span>
+            </label>
+            <label class="label-pill label-pill--neutral">
+              <input type="radio" name="entry-label" value="neutral" />
+              <span aria-label="Neutral">=</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Server error (shown when API call fails after submit) -->
+        <div class="field-server-error" id="entry-server-error" role="alert" aria-live="polite"></div>
+
+        <div class="form-submit-row">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit" id="entry-submit-btn" disabled>
+            Add Entry
+          </button>
+          <div class="submit-tooltip" role="tooltip">Enter a note to continue</div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- =============================================
+       DELETE CONFIRMATION MODAL
+       ============================================= -->
+  <div
+    class="modal-overlay"
+    id="confirm-delete-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-delete-title"
+    aria-hidden="true"
+  >
+    <div class="modal-panel modal-panel--narrow" id="confirm-delete-panel">
+      <h2 class="form-title" id="confirm-delete-title" style="margin-bottom:var(--space-3);">Delete entry?</h2>
+      <p class="form-subtitle" id="confirm-delete-body" style="margin-bottom:var(--space-6);"></p>
+      <div class="confirm-delete-actions">
+        <button class="btn btn-ghost"  id="confirm-delete-cancel-btn"  type="button">Cancel</button>
+        <button class="btn btn-danger" id="confirm-delete-confirm-btn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="dashboard.html" class="footer-link">Dashboard</a></li>
+            <li><a href="scorecard.html" class="footer-link">Scorecard</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="footer-col-title">Approach</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#" class="footer-link">Our philosophy</a></li>
+            <li><a href="#" class="footer-link">Privacy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!--
+    Script order matters:
+    1. main.js       — shared helpers: openModal, closeModal, trapFocus, initNav, etc.
+    2. api-client.js — apiRequest() used by scorecard.js
+    3. scorecard.js  — feature logic (depends on both above)
+  -->
+  <script src="js/main.js"       defer></script>
+  <script src="js/api-client.js" defer></script>
+  <script src="js/scorecard.js"  defer></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import { getBuddyDashboardController } from "../controller/buddyControllers/getB
 import { viewPartnerDataController } from "../controller/buddyControllers/viewPartnerDataController.js";
 import { revokeBuddyController } from "../controller/buddyControllers/revokeBuddyController.js";
 import { sendNudgeController, getReceivedNudgesController } from "../controller/buddyControllers/nudgeController.js";
+import { getBuddyHistoryController } from "../controller/buddyControllers/getBuddyHistoryController.js";
 
 const router = express.Router();
 
@@ -20,6 +21,9 @@ router.post("/claim/:token", authenticateJWT, claimLinkController);
 
 // send a nudge message to an identity's owner (buddy action)
 router.post("/message/:identityId", authenticateJWT, validateObjectId, validate(sendNudgeSchema), sendNudgeController);
+
+// owner views full pairing history for an identity
+router.get("/history/:identityId", authenticateJWT, validateObjectId, getBuddyHistoryController);
 
 // owner views received nudge messages for a specific identity
 router.get("/messages/:identityId", authenticateJWT, validateObjectId, getReceivedNudgesController);

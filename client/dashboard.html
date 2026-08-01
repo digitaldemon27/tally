@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Tally</title>
+  <meta name="description" content="Your Tally dashboard — all your identities and the votes you've cast for them." />
+
+  <!-- Stylesheets — loaded in dependency order -->
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body>
+
+  <!-- =============================================
+       NAV
+       ============================================= -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+
+        <ul class="nav-links" role="list">
+          <li><span class="nav-link" aria-current="page">Dashboard</span></li>
+          <li><a href="scorecard.html" class="nav-link">Scorecard</a></li>
+          <li>
+            <button class="btn btn-ghost" id="nav-logout-btn" type="button">Sign out</button>
+          </li>
+          <li>
+            <button class="btn btn-ghost" id="nav-logout-all-btn" type="button" style="font-size:0.8125rem; color:var(--text-muted);">Log out all devices</button>
+          </li>
+        </ul>
+
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section id="dashboard" aria-labelledby="dashboard-heading">
+      <div class="container">
+
+        <!-- Page header: title + primary CTA -->
+        <div class="dashboard-header">
+          <div>
+            <p class="eyebrow">Your journey</p>
+            <h1 class="section-title" id="dashboard-heading">Your Identities</h1>
+            <p class="section-subtitle">
+              Each identity is a statement about who you're becoming. Every habit you complete casts a vote for it.
+            </p>
+          </div>
+          <button
+            class="btn btn-primary"
+            id="open-identity-modal-btn"
+            type="button"
+            aria-haspopup="dialog"
+          >
+            + New Identity
+          </button>
+        </div>
+
+        <!-- Identity grid — JS-rendered -->
+        <div class="grid-3" id="identity-grid" role="list" aria-label="Your identities">
+          <!-- cards injected by initDashboard() -->
+        </div>
+
+        <!-- Empty state — shown when MOCK_IDENTITIES is empty -->
+        <div class="dashboard-empty" id="identity-empty-state" style="display:none;" aria-live="polite">
+          <div class="form-success__icon" aria-hidden="true">🗳️</div>
+          <h2 style="margin-bottom: var(--space-3);">No identities yet</h2>
+          <p class="text-slate" style="font-size:0.9375rem; max-width:40ch; margin-inline:auto; margin-bottom:var(--space-6);">
+            An identity is a statement about who you're becoming — "I am a Reader," "I am an Athlete." Create your first one to start casting votes.
+          </p>
+          <button
+            class="btn btn-primary"
+            id="open-identity-modal-empty-btn"
+            type="button"
+            aria-haspopup="dialog"
+          >
+            + New Identity
+          </button>
+        <!-- Buddies section — list of identities where you are an accountability buddy -->
+        <!-- TODO: wire to backend — GET /api/buddy -->
+        <div id="buddies-support-section" style="margin-top: var(--space-12); padding-top: var(--space-8); border-top: 1.5px solid var(--stone-dark); display:none;">
+          <div class="dashboard-section-head" style="margin-bottom: var(--space-4);">
+            <h2 class="section-title" style="font-size:1.25rem;">🤝 Buddies You Support</h2>
+            <p class="section-subtitle">Identities where you are serving as an accountability buddy.</p>
+          </div>
+          <div class="grid-3" id="buddies-grid" role="list" aria-label="Identities you support as a buddy">
+            <!-- partner cards injected by initDashboard() -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Floating Action Bar for Bulk Delete -->
+    <div class="floating-action-bar" id="identity-action-bar" role="region" aria-label="Bulk actions">
+      <span class="floating-action-bar__count" id="identity-select-count">0 selected</span>
+      <div class="floating-action-bar__actions">
+        <button class="btn btn-ghost" id="identity-cancel-select-btn" type="button">Cancel</button>
+        <button class="btn btn-danger" id="identity-delete-selected-btn" type="button">Delete Selected</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- =============================================
+       CREATE / EDIT IDENTITY MODAL
+       ============================================= -->
+  <div
+    class="modal-overlay"
+    id="identity-modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="identity-modal-title"
+    aria-hidden="true"
+  >
+    <div class="modal-panel" id="identity-modal-panel">
+
+      <button class="modal-close-btn" id="identity-modal-close-btn" type="button" aria-label="Close dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6"  x2="6"  y2="18"/>
+          <line x1="6"  y1="6"  x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <!-- Title changes between "New Identity" and "Edit Identity" -->
+      <h2 class="form-title" id="identity-modal-title" style="margin-bottom:var(--space-2);">New Identity</h2>
+      <p class="form-subtitle" id="identity-modal-subtitle">Define who you're becoming — you can always rename it later.</p>
+
+      <form id="identity-form" novalidate autocomplete="off">
+
+        <!-- Identity name -->
+        <div class="field-group" id="field-identity-name-group">
+          <label class="field-label" for="input-identity-name">
+            Identity name <span class="field-required" aria-hidden="true">*</span>
+          </label>
+          <div class="field-input-wrap">
+            <input
+              class="field-input"
+              type="text"
+              id="input-identity-name"
+              name="identity-name"
+              placeholder="e.g. Athlete, Reader, Early Riser"
+              aria-required="true"
+              aria-describedby="error-identity-name"
+              maxlength="40"
+              autocomplete="off"
+            />
+            <span class="field-status-icon" id="icon-identity-name" aria-hidden="true"></span>
+          </div>
+          <div class="field-error" id="error-identity-name" role="alert" aria-live="polite">
+            <span class="field-error__icon" aria-hidden="true">⚠</span>
+            <span id="error-identity-name-text"></span>
+          </div>
+        </div>
+
+        <!-- Description (optional, with live char count) -->
+        <div class="field-group">
+          <label class="field-label" for="input-identity-description">
+            Short description
+            <span class="field-optional" aria-label="optional">(optional)</span>
+          </label>
+          <div style="position:relative;">
+            <textarea
+              class="field-input field-textarea"
+              id="input-identity-description"
+              name="identity-description"
+              placeholder="e.g. Someone who reads daily to keep the mind sharp."
+              maxlength="120"
+              rows="2"
+              aria-describedby="desc-char-count"
+            ></textarea>
+            <span class="char-count" id="desc-char-count" aria-live="polite" aria-atomic="true">0 / 120</span>
+          </div>
+        </div>
+
+        <!-- Color swatch picker -->
+        <div class="field-group">
+          <p class="field-label" id="color-picker-label">Card color</p>
+          <div class="color-picker" role="group" aria-labelledby="color-picker-label">
+            <label class="color-swatch" title="Forest green">
+              <input type="radio" name="identity-color" value="moss" checked />
+              <span class="color-swatch__dot" style="background:var(--moss);" aria-hidden="true"></span>
+              <span class="sr-only">Forest green</span>
+            </label>
+            <label class="color-swatch" title="Slate blue">
+              <input type="radio" name="identity-color" value="blue" />
+              <span class="color-swatch__dot" style="background:var(--accent-blue);" aria-hidden="true"></span>
+              <span class="sr-only">Slate blue</span>
+            </label>
+            <label class="color-swatch" title="Terracotta">
+              <input type="radio" name="identity-color" value="terra" />
+              <span class="color-swatch__dot" style="background:var(--accent-terra);" aria-hidden="true"></span>
+              <span class="sr-only">Terracotta</span>
+            </label>
+            <label class="color-swatch" title="Plum">
+              <input type="radio" name="identity-color" value="plum" />
+              <span class="color-swatch__dot" style="background:var(--accent-plum);" aria-hidden="true"></span>
+              <span class="sr-only">Plum</span>
+            </label>
+            <label class="color-swatch" title="Teal">
+              <input type="radio" name="identity-color" value="teal" />
+              <span class="color-swatch__dot" style="background:var(--accent-teal);" aria-hidden="true"></span>
+              <span class="sr-only">Teal</span>
+            </label>
+            <label class="color-swatch" title="Amber">
+              <input type="radio" name="identity-color" value="amber" />
+              <span class="color-swatch__dot" style="background:var(--accent-amber);" aria-hidden="true"></span>
+              <span class="sr-only">Amber</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- hidden field tracks edit mode -->
+        <input type="hidden" id="identity-edit-id" value="" />
+
+        <div class="form-submit-row">
+          <button type="submit" class="btn btn-primary btn-lg btn-submit" id="identity-submit-btn" disabled>
+            Create Identity
+          </button>
+          <div class="submit-tooltip" role="tooltip">Enter a name to continue</div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- =============================================
+       DELETE CONFIRMATION MODAL (shared)
+       ============================================= -->
+  <div
+    class="modal-overlay"
+    id="confirm-delete-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-delete-title"
+    aria-hidden="true"
+  >
+    <div class="modal-panel modal-panel--narrow" id="confirm-delete-panel">
+      <h2 class="form-title" id="confirm-delete-title" style="margin-bottom:var(--space-3);">Delete identity?</h2>
+      <p class="form-subtitle" id="confirm-delete-body" style="margin-bottom:var(--space-6);"></p>
+      <div class="confirm-delete-actions">
+        <button class="btn btn-ghost" id="confirm-delete-cancel-btn" type="button">Cancel</button>
+        <button class="btn btn-danger" id="confirm-delete-confirm-btn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       FOOTER
+       ============================================= -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="dashboard.html" class="footer-link">Dashboard</a></li>
+            <li><a href="/#how-it-works"  class="footer-link">How it works</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="footer-col-title">Approach</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#" class="footer-link">Our philosophy</a></li>
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+  <script src="js/api-client.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
+</body>
+</html>

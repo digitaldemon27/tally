@@ -24,6 +24,21 @@
   --white:      #FFFFFF;
   --black:      #000000;
 
+  /* --- Semantic Surfaces & Text Aliases --- */
+  --surface-primary:   var(--stone);
+  --surface-secondary: var(--stone-dark);
+  --border-color:      var(--moss-tint);
+  --border-light:      var(--dust-light);
+  --text-main:         var(--ink);
+  --text-muted:        var(--slate-light);
+
+  /* --- Accent Palette (identity card colors) --- */
+  --accent-blue:  #5B6FA6;  /* slate blue */
+  --accent-terra: #B05C3A;  /* terracotta */
+  --accent-plum:  #7A5C9A;  /* plum */
+  --accent-teal:  #3A8A7A;  /* teal */
+  --accent-amber: #C47D2E;  /* warm amber */
+
   /* --- Spacing Scale (4px base) --- */
   --space-1:  0.25rem;   /*  4px */
   --space-2:  0.5rem;    /*  8px */

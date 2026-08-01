@@ -44,26 +44,45 @@ export const sendNudgeController = async (req, res) => {
 // GET /api/buddy/messages/:identityId
 export const getReceivedNudgesController = async (req, res) => {
     const { identityId } = req.params;
-    // receiverId = the owner viewing their own inbox — no BuddyPairing lookup needed, no cross-user access
     const receiverId = req.user.id || req.user.userId;
 
     try {
-        // sorted most-recent-first, no date scoping — this is a rolling message feed
-        const messages = await NudgeMessage
+        const rawMessages = await NudgeMessage
             .find({ receiverId, identityId })
+            .populate("senderId", "username")
             .sort({ createdAt: -1 });
 
-        // empty array is valid — no nudges received for this identity yet
+        const pairings = await BuddyPairing.find({ ownerUserId: receiverId, identityId }).populate("buddyUserId", "username");
+
+        const messages = rawMessages.map(msg => {
+            const msgObj = msg.toObject();
+            const senderIdStr = (msg.senderId?._id || msg.senderId)?.toString();
+            const matchingPairing = pairings.find(p => {
+                const bId = p.buddyUserId?._id ? p.buddyUserId._id.toString() : p.buddyUserId?.toString();
+                return bId === senderIdStr;
+            });
+
+            return {
+                _id: msgObj._id,
+                identityId: msgObj.identityId,
+                senderId: senderIdStr,
+                senderUsername: msg.senderId?.username || "Past Buddy",
+                message: msgObj.message,
+                createdAt: msgObj.createdAt,
+                pairingStatus: matchingPairing ? matchingPairing.status : "revoked"
+            };
+        });
+
         return res.status(200).json({
             success: true,
             messages
         });
 
     } catch (error) {
-        console.error("error occurred while fetching nudges:", error.message);
+        console.error("Error occurred while fetching nudges:", error.message);
         return res.status(500).json({
             success: false,
-            message: "internal server error"
+            message: "Internal server error"
         });
     }
 };

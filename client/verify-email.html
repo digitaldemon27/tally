@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your email — Tally</title>
+  <meta name="description" content="Verifying your Tally account email address. One step closer to casting your first vote." />
+
+  <!-- Stylesheets — loaded in dependency order -->
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body>
+
+  <!-- =============================================
+       NAV
+       ============================================= -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <!-- Inline micro tally SVG -->
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+
+        <ul class="nav-links" role="list">
+          <li><a href="/#how-it-works" class="nav-link">How it works</a></li>
+          <li><a href="/#vs-others"    class="nav-link">Why Tally</a></li>
+          <li><a href="/#family"       class="nav-link">Family</a></li>
+          <li><a href="/#sign-up"      class="nav-link btn btn-primary">Start voting</a></li>
+        </ul>
+
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+
+    <!-- =============================================
+         EMAIL VERIFICATION
+         ============================================= -->
+    <section id="verify-email" class="form-section" aria-labelledby="verify-heading">
+      <div class="container">
+
+        <div class="form-card">
+
+          <!-- Verifying state — shown by default while the fetch runs -->
+          <div id="verify-state-loading" aria-live="polite">
+            <div style="text-align: center; padding: var(--space-8) 0;">
+              <div class="spinner" aria-hidden="true"></div>
+              <h1 class="form-title" id="verify-heading" style="margin-top: var(--space-6);">Verifying your email…</h1>
+              <p class="form-subtitle" style="margin-bottom: 0;">Just a moment — we're checking your link.</p>
+            </div>
+          </div>
+
+          <!-- Success state — hidden until verification passes -->
+          <div class="form-success" id="verify-state-success" aria-live="polite">
+            <div class="form-success__icon" aria-hidden="true">✓</div>
+            <h2 style="margin-bottom: var(--space-3);">Email verified</h2>
+            <p class="text-slate" style="font-size: 0.9375rem; max-width: 36ch; margin-inline: auto;">
+              You're all set. Redirecting you to set your password…
+            </p>
+          </div>
+
+          <!-- Error state — hidden until verification fails -->
+          <div id="verify-state-error" style="display: none; padding: var(--space-4) 0;">
+            <div style="text-align: center; margin-bottom: var(--space-6);">
+              <div class="form-success__icon" aria-hidden="true">⚠️</div>
+              <h2 style="margin-bottom: var(--space-3);">Link invalid or expired</h2>
+            </div>
+            <!-- Reuses .field-server-error styling for the message -->
+            <div class="field-server-error visible" id="verify-error-message" role="alert">
+              <span id="verify-error-text">This verification link is invalid or has expired.</span>
+            </div>
+            <div style="margin-top: var(--space-6); text-align: center;">
+              <p class="text-slate" style="font-size: 0.9375rem; margin-bottom: var(--space-4);">
+                Request a new link and we'll send it to the email you signed up with.
+              </p>
+              <!-- TODO: wire this to a working resend endpoint once one exists -->
+              <button
+                class="btn btn-secondary"
+                id="resend-verification-btn"
+                type="button"
+              >
+                Resend verification email
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =============================================
+       FOOTER
+       ============================================= -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="/#how-it-works" class="footer-link">How it works</a></li>
+            <li><a href="/#vs-others"    class="footer-link">Why Tally</a></li>
+            <li><a href="/#family"       class="footer-link">Family groups</a></li>
+            <li><a href="/#sign-up"      class="footer-link">Sign up free</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="footer-col-title">Approach</p>
+          <ul class="footer-links" role="list">
+            <li><a href="#" class="footer-link">Our philosophy</a></li>
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- JS — deferred so it runs after DOM is parsed -->
+  <script src="js/main.js" defer></script>
+  <script src="js/api-client.js" defer></script>
+  <script src="js/verify-email.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claim Buddy Invite — Tally</title>
+  <meta name="description" content="Claim your buddy invite link to support your friend's habits." />
+
+  <!-- Preconnect to Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Lora:ital,wght@0,400..700;1,400..700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Core Design System CSS -->
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="stylesheet" href="css/forms.css" />
+</head>
+<body class="page-auth">
+
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <!-- SITE HEADER -->
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Tally home">
+        <span class="brand-mark" aria-hidden="true">🗳</span>
+        <span class="brand-text">Tally</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content" tabIndex="-1">
+    <section class="auth-section">
+      <div class="container container-narrow">
+        <div class="form-card card-tally reveal-item" style="text-align: center; padding: var(--space-8);">
+
+          <!-- LOADING STATE -->
+          <div id="claim-state-loading">
+            <div class="spinner" aria-label="Claiming invite…" style="margin: 0 auto var(--space-4) auto;"></div>
+            <h1 class="form-title" style="font-size: 1.5rem;">Activating Buddy Link…</h1>
+            <p class="form-subtitle">Setting up your buddy partnership on Tally.</p>
+          </div>
+
+          <!-- SUCCESS STATE -->
+          <div id="claim-state-success" style="display: none;">
+            <span style="font-size: 3rem; display: block; margin-bottom: var(--space-3);" aria-hidden="true">🤝</span>
+            <h1 class="form-title" style="font-size: 1.5rem; color: var(--moss);">Buddy Link Claimed!</h1>
+            <p class="form-subtitle" id="claim-success-msg">You are now paired as a buddy. Redirecting to your partner view…</p>
+          </div>
+
+          <!-- ERROR STATE -->
+          <div id="claim-state-error" style="display: none;">
+            <span style="font-size: 3rem; display: block; margin-bottom: var(--space-3);" aria-hidden="true">⚠️</span>
+            <h1 class="form-title" style="font-size: 1.5rem; color: var(--danger, #c53030);">Invite Link Unavailable</h1>
+            <div class="field-server-error visible" id="claim-error-text" style="margin: var(--space-4) 0;"></div>
+            <a href="dashboard.html" class="btn btn-primary" style="margin-top: var(--space-4);">Go to Dashboard →</a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-inner">
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+        <p class="footer-copy">No streaks. No shame. Just votes.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+  <script src="js/api-client.js" defer></script>
+  <script src="js/buddy-claim.js" defer></script>
+
+</body>
+</html>

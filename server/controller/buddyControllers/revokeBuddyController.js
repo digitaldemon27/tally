@@ -1,51 +1,57 @@
 import BuddyPairing from "../../schema/buddyPairingSchema.js";
 import NudgeMessage from "../../schema/nudgeMessageSchema.js";
+import Notification from "../../schema/notificationSchema.js";
+import Identity from "../../schema/identitySchema.js";
 import mongoose from "mongoose";
 
 // DELETE /api/buddy/:identityId
 export const revokeBuddyController = async (req, res) => {
     const { identityId } = req.params;
-    const ownerUserId = req.user.id || req.user.userId;
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const userId = req.user.id || req.user.userId;
 
     try {
-        // delete all nudge history tied to this pairing first
-        await NudgeMessage.deleteMany({ identityId, receiverId: ownerUserId }, { session });
+        const pairing = await BuddyPairing.findOne({
+            identityId,
+            status: "active",
+            $or: [{ ownerUserId: userId }, { buddyUserId: userId }]
+        });
 
-        // delete the pairing itself — ownership check combined directly into the filter
-        const result = await BuddyPairing.deleteOne({ identityId, ownerUserId }, { session });
-
-        // if 0 — pairing didn't exist or wasn't owned by this user
-        // aborting automatically rolls back the message deletion too
-        if (result.deletedCount === 0) {
-            await session.abortTransaction();
+        if (!pairing) {
             return res.status(404).json({
                 success: false,
-                message: "Buddy pairing not found"
+                message: "Active buddy pairing not found"
             });
         }
 
-        await session.commitTransaction();
+        const isOwner = pairing.ownerUserId.toString() === userId.toString();
+        const otherPartyId = isOwner ? pairing.buddyUserId : pairing.ownerUserId;
 
-        // NOTE: no notification is sent to the revoked buddy here.
-        // notifying the revoked buddy is explicitly deferred to the future general notification system
-        // (the same one that will eventually handle vote reminders) — this is not an oversight.
+        const identity = await Identity.findById(identityId);
+        const identityName = identity ? identity.name : "an identity";
+
+        // Soft delete pairing — preserve nudge history and change status to 'revoked'
+        pairing.status = "revoked";
+        await pairing.save();
+
+        // Notify the other party
+        if (otherPartyId) {
+          await Notification.create({
+            userId: otherPartyId,
+            message: `Your buddy pairing for "${identityName}" has ended.`,
+            read: false
+          });
+        }
 
         return res.status(200).json({
             success: true,
-            message: "Buddy revoked and all nudge history cleared"
+            message: "Buddy pairing revoked successfully"
         });
 
     } catch (error) {
-        await session.abortTransaction();
-        console.error("error occurred while revoking buddy:", error.message);
+        console.error("Error occurred while revoking buddy:", error.message);
         return res.status(500).json({
             success: false,
-            message: "internal server error"
+            message: "Internal server error"
         });
-    } finally {
-        session.endSession();
     }
 };

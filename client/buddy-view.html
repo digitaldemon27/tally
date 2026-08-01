@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partner Identity — Tally</title>
+  <meta name="description" content="View your buddy's identity habits and send encouraging nudges on Tally." />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/typography.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+</head>
+<body id="buddy-view-page">
+
+  <!-- NAV -->
+  <header>
+    <nav class="site-nav" role="navigation" aria-label="Main navigation">
+      <div class="nav-inner container">
+        <a href="/" class="nav-logo" aria-label="Tally home">
+          <span class="tally-mark" aria-hidden="true">
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="2"  y1="2" x2="2"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="7"  y1="2" x2="7"  y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="2" x2="12" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="17" y1="2" x2="17" y2="18" stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="0"  y1="17" x2="19" y2="3"  stroke="#3D6B4F" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Tally
+        </a>
+        <ul class="nav-links" role="list">
+          <li><a href="dashboard.html" class="nav-link">← Dashboard</a></li>
+          <li><a href="scorecard.html" class="nav-link">Scorecard</a></li>
+          <li>
+            <button class="btn btn-ghost" id="nav-logout-btn" type="button">Sign out</button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section aria-labelledby="partner-identity-heading">
+      <div class="container" style="padding-top: var(--space-8); padding-bottom: var(--space-16);">
+
+        <a href="dashboard.html" class="identity-back-link" style="display:inline-block; margin-bottom:var(--space-4);">← Back to Dashboard</a>
+
+        <!-- Header: Partner Identity Title + Meta + Leave Pairing button -->
+        <div class="identity-detail-header" style="margin-bottom: var(--space-8);">
+          <div class="identity-detail-meta">
+            <p class="eyebrow" id="partner-eyebrow">Accountability Buddy View</p>
+            <h1 class="section-title" id="partner-identity-heading" style="margin-bottom:var(--space-2);">Loading partner identity…</h1>
+            <p class="section-subtitle" id="partner-identity-sub" style="margin-bottom:var(--space-4); max-width:52ch;">
+              You are the accountability buddy for this identity.
+            </p>
+            <div>
+              <button class="btn btn-ghost btn-danger-ghost" id="leave-pairing-btn" type="button">Leave pairing</button>
+            </div>
+          </div>
+
+          <div class="identity-stat-card" aria-label="Partner statistics">
+            <p class="card-tally__label">Total votes cast</p>
+            <p class="card-tally__count" id="partner-stat-votes" style="margin-bottom:var(--space-1);">—</p>
+            <p class="card-tally__sub">across all habits</p>
+            <div class="identity-stat-divider"></div>
+            <p class="card-tally__label">Avg. consistency</p>
+            <p class="identity-stat-consistency" id="partner-stat-consistency">—%</p>
+            <p class="card-tally__sub">trailing 30 days</p>
+          </div>
+        </div>
+
+        <!-- Habits list (read-only) -->
+        <div class="identity-habits-header" style="margin-bottom:var(--space-4);">
+          <h2 class="identity-habits-title">Partner's Habits</h2>
+        </div>
+
+        <div id="partner-habit-list" role="list" aria-label="Partner habits"></div>
+
+        <!-- Free-text Nudge Box (Buddy -> Owner direction) -->
+        <!-- TODO: wire to backend — POST /api/buddy/message/:identityId -->
+        <div class="nudge-send-box">
+          <h3 class="form-title" style="font-size:1.1rem; margin-bottom:var(--space-2);">Send an Encouraging Nudge</h3>
+          <p class="form-subtitle" style="margin-bottom:var(--space-4);">
+            Send a free-text message to encourage your partner. Nudges are delivered directly to their identity dashboard feed.
+          </p>
+
+          <form id="nudge-form" novalidate autocomplete="off">
+            <div class="field-group">
+              <label class="field-label" for="input-nudge-text">Nudge message</label>
+              <div class="field-input-wrap">
+                <textarea
+                  class="field-input field-textarea"
+                  id="input-nudge-text"
+                  name="nudge-text"
+                  placeholder="e.g. Great consistency this week! Keep going 💪"
+                  rows="3"
+                  maxlength="280"
+                  required
+                ></textarea>
+              </div>
+            </div>
+            <div id="nudge-success-msg" class="field-server-error" style="background:#E6F4EA; border-color:#B7E1CD; color:#137333; display:none;" role="status">
+              Nudge sent successfully!
+            </div>
+            <div class="form-submit-row">
+              <button type="submit" class="btn btn-primary" id="nudge-submit-btn">Send Nudge</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- CONFIRM LEAVE PAIRING MODAL -->
+  <div class="modal-overlay" id="confirm-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-delete-title" aria-hidden="true">
+    <div class="modal-panel modal-panel--narrow" id="confirm-delete-panel">
+      <h2 class="form-title" id="confirm-delete-title" style="margin-bottom:var(--space-3);">Leave Pairing?</h2>
+      <p class="form-subtitle" id="confirm-delete-body" style="margin-bottom:var(--space-6);"></p>
+      <div class="confirm-delete-actions">
+        <button class="btn btn-ghost"  id="confirm-delete-cancel-btn"  type="button">Cancel</button>
+        <button class="btn btn-danger" id="confirm-delete-confirm-btn" type="button">Leave Pairing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <p class="footer-logo">Tally</p>
+          <p class="footer-tagline">An identity-based habit tracker.<br>Votes only ever accumulate.</p>
+        </div>
+        <div>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-links" role="list">
+            <li><a href="dashboard.html" class="footer-link">Dashboard</a></li>
+            <li><a href="scorecard.html" class="footer-link">Scorecard</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2025 Tally. Built on the principles of Atomic Habits by James Clear.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/api-client.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/buddy-view.js" defer></script>
+</body>
+</html>
