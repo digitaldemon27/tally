@@ -850,17 +850,57 @@ function closeAllOverflowMenus() {
     if (t) t.setAttribute('aria-expanded', 'false');
   });
 }
-
 /* ============================================================
    MULTI-SELECT & BULK DELETE HELPERS (Part A)
    ============================================================ */
 
-function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, cancelBtnId, deleteBtnId, itemNoun, onDelete }) {
+function initMultiSelect({
+  containerEl,
+  checkboxSelector,
+  actionBarId,
+  countId,
+  cancelBtnId,
+  deleteBtnId,
+  archiveBtnId,
+  itemNoun,
+  onDelete,
+  onArchive
+}) {
   const bar = document.getElementById(actionBarId);
   const countEl = document.getElementById(countId);
   const cancelBtn = document.getElementById(cancelBtnId);
   const deleteBtn = document.getElementById(deleteBtnId);
+  const archiveBtn = archiveBtnId ? document.getElementById(archiveBtnId) : null;
   if (!bar || !countEl || !cancelBtn || !deleteBtn) return;
+
+  let freshArchive = null;
+
+  const freshDelete = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(freshDelete, deleteBtn);
+
+  if (archiveBtn) {
+    freshArchive = archiveBtn.cloneNode(true);
+    archiveBtn.parentNode.replaceChild(freshArchive, archiveBtn);
+
+    freshArchive.addEventListener('click', async () => {
+      const selectedIds = Array.from(containerEl.querySelectorAll(checkboxSelector + ':checked')).map(cb => cb.dataset.id);
+      if (selectedIds.length === 0) return;
+
+      freshArchive.disabled = true;
+      freshArchive.textContent = 'Archiving…';
+      try {
+        if (onArchive) await onArchive(selectedIds);
+        bar.classList.remove('is-visible');
+        containerEl.classList.remove('selection-mode');
+        containerEl.querySelectorAll(checkboxSelector + ':checked').forEach(cb => { cb.checked = false; });
+      } catch (err) {
+        console.error('Bulk archive failed:', err);
+      } finally {
+        freshArchive.disabled = false;
+        freshArchive.textContent = 'Archive Selected';
+      }
+    });
+  }
 
   function updateBar() {
     const checkboxes = Array.from(containerEl.querySelectorAll(checkboxSelector + ':checked'));
@@ -876,6 +916,7 @@ function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, 
 
     countEl.textContent = `${count} ${count === 1 ? itemNoun : itemNoun + 's'} selected`;
     freshDelete.disabled = (count === 0);
+    if (freshArchive) freshArchive.disabled = (count === 0);
 
     if (count > 0 || containerEl.classList.contains('selection-mode')) {
       bar.classList.add('is-visible');
@@ -954,9 +995,6 @@ function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, 
       pressTimer = null;
     }
   });
-
-  const freshDelete = deleteBtn.cloneNode(true);
-  deleteBtn.parentNode.replaceChild(freshDelete, deleteBtn);
 
   freshDelete.addEventListener('click', () => {
     const selectedIds = Array.from(containerEl.querySelectorAll(checkboxSelector + ':checked')).map(cb => cb.dataset.id);
@@ -1364,6 +1402,8 @@ function updateDescCharCount(len) {
    ============================================================ */
 
 function initIdentityDetail() {
+  // Disabled mock handler — live handler initIdentityPage in identity.js manages identity.html
+  return;
   const habitList = document.getElementById('habit-list');
   if (!habitList) return;
   if (!requireAuth()) return;

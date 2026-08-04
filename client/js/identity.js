@@ -17,6 +17,7 @@
 let STATE_IDENTITY_DETAIL = null;
 let STATE_HABITS = [];
 let STATE_VOTE_SUMMARIES = {}; // habitId -> summary
+let SHOW_ARCHIVED = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   initIdentityPage();
@@ -53,8 +54,6 @@ async function initIdentityPage() {
 
   document.title = `${STATE_IDENTITY_DETAIL.name} — Tally`;
   renderIdentityHeaderLive();
-
-  let SHOW_ARCHIVED = false;
 
   const editBtn = document.getElementById('edit-identity-btn');
   const deleteBtn = document.getElementById('delete-identity-btn');
@@ -118,6 +117,7 @@ async function initIdentityPage() {
   loadRecentAISuggestions(identityId);
 
   // Multi-select bulk delete initialization for habits
+  // Multi-select bulk delete and bulk archive initialization for habits
   initMultiSelect({
     containerEl: habitList,
     checkboxSelector: '.js-habit-select',
@@ -125,6 +125,7 @@ async function initIdentityPage() {
     countId: 'habit-select-count',
     cancelBtnId: 'habit-cancel-select-btn',
     deleteBtnId: 'habit-delete-selected-btn',
+    archiveBtnId: 'habit-archive-selected-btn',
     itemNoun: 'habit',
     onDelete: async (ids) => {
       try {
@@ -136,6 +137,22 @@ async function initIdentityPage() {
         renderHabits();
       } catch (err) {
         alert(err.message || 'Failed to delete selected habits.');
+      }
+    },
+    onArchive: async (ids) => {
+      try {
+        await apiRequest('/api/habits/archive', {
+          method: 'PATCH',
+          body: JSON.stringify({ habitIds: ids, isArchived: true })
+        });
+        STATE_HABITS.forEach(h => {
+          if (ids.includes(getItemId(h))) {
+            h.isArchived = true;
+          }
+        });
+        renderHabits();
+      } catch (err) {
+        alert(err.message || 'Failed to archive selected habits.');
       }
     }
   });
@@ -326,22 +343,7 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
     openHabitModalForLive('edit', habit, identityId, trigger, onUpdate);
   });
 
-  row.querySelector('[data-action="archive"]').addEventListener('click', async () => {
-    closeAllOverflowMenus();
-    try {
-      const updatedStatus = !habit.isArchived;
-      await apiRequest(`/api/habits/${hId}/archive`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isArchived: updatedStatus })
-      });
-      habit.isArchived = updatedStatus;
-      renderHabits();
-    } catch (err) {
-      alert(err.message || 'Failed to update habit archive status.');
-    }
-  });
-
-  row.querySelector('[data-action="select"]').addEventListener('click', () => {
+  const enterSelectionMode = () => {
     closeAllOverflowMenus();
     const container = document.getElementById('habit-list');
     if (container) {
@@ -352,29 +354,11 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
         cb.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
-  });
+  };
 
-  row.querySelector('[data-action="delete"]').addEventListener('click', () => {
-    closeAllOverflowMenus();
-    openConfirmDelete({
-      title: `Delete "${habit.name}"?`,
-      body: `This will permanently remove "${habit.name}" and all its votes. This cannot be undone.`,
-      triggerEl: trigger,
-      onConfirm: async () => {
-        try {
-          await apiRequest('/api/habits', {
-            method: 'DELETE',
-            body: JSON.stringify({ habitIds: [hId] })
-          });
-          STATE_HABITS = STATE_HABITS.filter(h => getItemId(h) !== hId);
-          delete STATE_VOTE_SUMMARIES[hId];
-          if (onUpdate) onUpdate();
-        } catch (err) {
-          alert(err.message || 'Failed to delete habit.');
-        }
-      },
-    });
-  });
+  row.querySelector('[data-action="archive"]')?.addEventListener('click', enterSelectionMode);
+  row.querySelector('[data-action="select"]')?.addEventListener('click', enterSelectionMode);
+  row.querySelector('[data-action="delete"]')?.addEventListener('click', enterSelectionMode);
 
   return row;
 }
@@ -443,7 +427,7 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
   form.parentNode.replaceChild(freshForm, form);
 
   const titleEl = document.getElementById('habit-modal-title');
-  const submitBtn = document.getElementById('habit-submit-btn');
+  const submitBtn = freshForm.querySelector('#habit-submit-btn');
   const nameInput = freshForm.querySelector('#input-habit-name');
   const editIdInput = freshForm.querySelector('#habit-edit-id');
 

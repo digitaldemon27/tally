@@ -402,7 +402,7 @@ function openIdentityModalLive(mode, identity, triggerEl, onSuccess) {
   form.parentNode.replaceChild(freshForm, form);
 
   const titleEl = document.getElementById('identity-modal-title');
-  const submitBtn = document.getElementById('identity-submit-btn');
+  const submitBtn = freshForm.querySelector('#identity-submit-btn');
   const nameInput = freshForm.querySelector('#input-identity-name');
   const descInput = freshForm.querySelector('#input-identity-description');
   const editIdInput = freshForm.querySelector('#identity-edit-id');

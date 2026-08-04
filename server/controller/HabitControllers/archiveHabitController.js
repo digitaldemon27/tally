@@ -1,5 +1,5 @@
 import Habit from "../../schema/habitSchema.js";
-import { validateObjectId } from "../../utils/validation.js";
+import { validateObjectId, isValidObjectId } from "../../utils/validation.js";
 
 // PATCH /api/habits/:id/archive
 export const archiveHabitToggle = async (req, res) => {
@@ -70,6 +70,48 @@ export const archiveHabitToggle = async (req, res) => {
         console.error("error occurred while archiving habit:", error.message);
 
         // Return clean internal server error response
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+        });
+    }
+};
+
+// PATCH /api/habits/archive
+export const archiveBulkHabits = async (req, res) => {
+    const { habitIds, isArchived } = req.body;
+    const userId = req.user.userId || req.user.id;
+
+    if (!habitIds || !Array.isArray(habitIds) || habitIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "habitIds must be a non-empty array"
+        });
+    }
+
+    const hasInvalidId = habitIds.some(id => !isValidObjectId(id));
+    if (hasInvalidId) {
+        return res.status(400).json({
+            success: false,
+            message: "One or more habit IDs are in an invalid format"
+        });
+    }
+
+    const targetArchived = isArchived !== undefined ? Boolean(isArchived) : true;
+
+    try {
+        const result = await Habit.updateMany(
+            { _id: { $in: habitIds }, userId },
+            { isArchived: targetArchived }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `Selected habits ${targetArchived ? 'archived' : 'unarchived'} successfully`,
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error) {
+        console.error("error occurred while archiving habits in bulk:", error.message);
         return res.status(500).json({
             success: false,
             message: "internal server error"
