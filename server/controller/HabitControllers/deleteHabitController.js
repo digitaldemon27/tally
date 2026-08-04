@@ -1,6 +1,6 @@
 import Habit from "../../schema/habitSchema.js";
 import HabitLog from "../../schema/habitLogSchema.js";
-import mongoose from "mongoose";
+import { clusterConnection } from "../../config/dbConfig.js";
 import { isValidObjectId } from "../../utils/validation.js";
 
 // DELETE /api/habits
@@ -28,7 +28,7 @@ export const deleteBulkHabits = async (req, res) => {
     }
 
     try {
-        const session = await mongoose.startSession();
+        const session = await clusterConnection.startSession();
         session.startTransaction();
 
         try {

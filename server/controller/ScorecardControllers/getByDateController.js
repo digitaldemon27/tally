@@ -1,6 +1,7 @@
 import ScorecardEntry from "../../schema/ScorecardEntry.js";
 import User from "../../schema/userSchema.js";
 import { getDateInUserTimezoneUTC } from "../../utils/getUserMidnightUTC.js";
+import { DateTime } from "luxon";
 
 // GET /scorecard/:date
 export const getByDateController = async (req, res) => {
@@ -27,10 +28,18 @@ export const getByDateController = async (req, res) => {
         // Q: Why not a $lookup inside the scorecard query?
         // A: These hit two different collections. A $lookup adds complexity for fetching one field off one document. Two simple queries are cleaner.
         const user = await User.findOne({ _id: userId }).select("createdAt");
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
 
-        // Normalize account creation date to midnight UTC before comparing
-        const normalizedAccountCreation = new Date(user.createdAt);
-        normalizedAccountCreation.setUTCHours(0, 0, 0, 0);
+        // Convert user's account creation to the local date string in their timezone
+        const userLocalCreationDateStr = DateTime.fromJSDate(user.createdAt).setZone(req.timezone).toFormat("yyyy-MM-dd");
+        
+        // Get midnight UTC representation of that creation date in user's timezone
+        const normalizedAccountCreation = getDateInUserTimezoneUTC(userLocalCreationDateStr, req.timezone);
 
         // Step 6: Reject dates before account was created, or in the future — only dates where data could possibly exist
         if (parsedDate < normalizedAccountCreation || parsedDate > todayNormalized) {

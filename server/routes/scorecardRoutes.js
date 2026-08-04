@@ -5,6 +5,7 @@ import { createEntrySchema, editEntrySchema } from "../validators/scorecard.vali
 import { createEntryController } from "../controller/ScorecardControllers/createEntryController.js";
 import { editEntryController } from "../controller/ScorecardControllers/editEntryController.js";
 import { deleteEntryController } from "../controller/ScorecardControllers/deleteEntryController.js";
+import { deleteBulkEntriesController } from "../controller/ScorecardControllers/deleteBulkEntriesController.js";
 import { getTodayController } from "../controller/ScorecardControllers/getTodayController.js";
 import { getByDateController } from "../controller/ScorecardControllers/getByDateController.js";
 import { requireTimezone } from "../Middleware/requireTimezone.js";
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.post("/", authenticateJWT, requireTimezone, validate(createEntrySchema), createEntryController);
 router.patch("/:entryId", authenticateJWT, requireTimezone, validate(editEntrySchema), editEntryController);
+router.delete("/", authenticateJWT, requireTimezone, deleteBulkEntriesController);
 router.delete("/:entryId", authenticateJWT, requireTimezone, deleteEntryController);
 
 // /today MUST be registered before /:date — Express matches top-to-bottom, and /:date would capture

@@ -15,8 +15,19 @@ const port = process.env.PORT || 4000;
 // Middleware
 app.use(express.json({ limit: '1mb' })); // limiting payload to protect from DoS
 app.use(cookieParser());
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(null, true); // Allow dev origins dynamically
+    },
     credentials: true
 }));
 

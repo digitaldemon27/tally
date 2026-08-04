@@ -1,6 +1,8 @@
 import Identity from "../../schema/identitySchema.js";
 import Habit from "../../schema/habitSchema.js";
+import HabitLog from "../../schema/habitLogSchema.js";
 import { isValidObjectId } from "../../utils/validation.js";
+import { clusterConnection } from "../../config/dbConfig.js";
 
 // DELETE /api/identities
 export const deleteBulkIdentities = async (req, res) => {
@@ -26,21 +28,36 @@ export const deleteBulkIdentities = async (req, res) => {
         });
     }
 
-    try {
-        // delete the child habits first to prevent orphaned records if the connection drops midway
-        await Habit.deleteMany({ identityId: { $in: identityIds }, userId });
+    const session = await clusterConnection.startSession();
+    session.startTransaction();
 
-        // not using a loop to iterate all the identityIds , executing a single atomic batch operation instead of triggering multiple expensive database round-trips.
-        const result = await Identity.deleteMany({ _id: { $in: identityIds }, userId });
+    try {
+        // 1. Find all habits linked to these identities for this user
+        const habits = await Habit.find({ identityId: { $in: identityIds }, userId }).session(session);
+        const habitIds = habits.map(h => h._id);
+
+        // 2. Delete all HabitLogs (votes) linked to those habits
+        if (habitIds.length > 0) {
+            await HabitLog.deleteMany({ habitId: { $in: habitIds }, userId }).session(session);
+        }
+
+        // 3. Delete the child habits
+        await Habit.deleteMany({ identityId: { $in: identityIds }, userId }).session(session);
+
+        // 4. Delete the identities
+        const result = await Identity.deleteMany({ _id: { $in: identityIds }, userId }).session(session);
 
         // Handle the case where the IDs are correctly formatted, but none exist in the DB 
         // OR they exist but belong to a different user (middleware userId mismatch).
         if (result.deletedCount === 0) {
+            await session.abortTransaction();
             return res.status(404).json({
                 success: false,
                 message: "No matching identities found to delete"
             });
         }
+
+        await session.commitTransaction();
 
         // Return success response with processed count
         return res.status(200).json({
@@ -49,6 +66,7 @@ export const deleteBulkIdentities = async (req, res) => {
             deletedCount: result.deletedCount // Will show exactly how many were actually deleted
         });
     } catch (error) {
+        await session.abortTransaction();
         // Log the internal error stack trace
         console.error("error occurred while deleting identities:", error.message);
 
@@ -57,5 +75,7 @@ export const deleteBulkIdentities = async (req, res) => {
             success: false,
             message: "internal server error"
         });
+    } finally {
+        session.endSession();
     }
 };

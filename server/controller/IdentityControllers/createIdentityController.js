@@ -3,7 +3,7 @@ import Identity from "../../schema/identitySchema.js";
 // POST /api/identities
 // ------ called middleware authenticateJWT to allow onlyverifed user to create-----
 export const createIdentityContoller = async (req, res) => {
-    const { name } = req.body;
+    const { name, description, color } = req.body;
     const { userId } = req.user;
 
     try {
@@ -19,11 +19,15 @@ export const createIdentityContoller = async (req, res) => {
         const newIdentity = await Identity.create({
             userId,
             name,
+            description: description || "",
+            color: color || "moss"
         })
 
         return res.status(201).json({
+            success: true,
             status: true,
-            message: "Identity created successfully"
+            message: "Identity created successfully",
+            data: newIdentity
         })
 
     } catch (error) {

@@ -21,4 +21,6 @@ export const identityNameSchema = z.object({
     .refine((val) => /[a-zA-Z0-9]/.test(val), {
       message: "Name must contain at least one letter or number",
     }),
+  description: z.string().trim().optional(),
+  color: z.string().trim().optional(),
 });

@@ -27,12 +27,69 @@ function getAuthToken() {
   return localStorage.getItem('accessToken');
 }
 
+let refreshInFlight = null;
+let proactiveRefreshTimer = null;
+
 function setAuthToken(token) {
-  if (token) localStorage.setItem('accessToken', token);
+  if (token) {
+    localStorage.setItem('accessToken', token);
+    setupProactiveRefresh();
+  }
 }
 
 function removeAuthToken() {
   localStorage.removeItem('accessToken');
+  clearProactiveRefresh();
+}
+
+async function tryRefreshToken() {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = fetch(`http://localhost:4000/api/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  })
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      if (data?.accessToken) {
+        setAuthToken(data.accessToken);
+        return true;
+      }
+      return false;
+    })
+    .catch(() => false)
+    .finally(() => { refreshInFlight = null; });
+
+  return refreshInFlight;
+}
+
+function setupProactiveRefresh() {
+  clearProactiveRefresh();
+  const token = getAuthToken();
+  if (!token) return;
+
+  // Refresh proactively every 13 minutes (13 * 60 * 1000 ms)
+  // Access tokens expire in 15 minutes.
+  proactiveRefreshTimer = setInterval(async () => {
+    console.log('[DEBUG] Running proactive token refresh...');
+    const success = await tryRefreshToken();
+    if (!success) {
+      console.warn('[DEBUG] Proactive token refresh failed. User session might expire.');
+    }
+  }, 13 * 60 * 1000);
+}
+
+function clearProactiveRefresh() {
+  if (proactiveRefreshTimer) {
+    clearInterval(proactiveRefreshTimer);
+    proactiveRefreshTimer = null;
+  }
+}
+
+// Auto-initialize proactive refresh on script load
+if (typeof window !== 'undefined') {
+  setupProactiveRefresh();
 }
 
 /**
@@ -79,6 +136,7 @@ async function apiRequest(path, options = {}) {
   try {
     response = await fetch(fullUrl, {
       ...options,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -90,17 +148,37 @@ async function apiRequest(path, options = {}) {
     throw new Error('Network error — check your connection and try again.');
   }
 
-  if (response.status === 401) {
+  console.log('[DEBUG] apiRequest response status:', response.status);
+  const isAuthRoute = normalizedPath.includes('/auth/login') ||
+                      normalizedPath.includes('/auth/register') ||
+                      normalizedPath.includes('/auth/verify-token') ||
+                      normalizedPath.includes('/auth/set-password') ||
+                      normalizedPath.includes('/auth/forgot-password') ||
+                      normalizedPath.includes('/auth/reset-password');
+
+  if (response.status === 401 && !isAuthRoute) {
+    console.log('[DEBUG] 401 Unauthorized encountered. Attempting silent refresh...');
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      console.log('[DEBUG] Silent refresh succeeded. Retrying original request...');
+      return apiRequest(path, options);
+    }
+    console.log('[DEBUG] Silent refresh failed or expired. Redirecting to login...');
     removeAuthToken();
-    window.location.href = 'login.html';
+    if (typeof window !== 'undefined' && !window.location.pathname.endsWith('login.html')) {
+      window.location.href = 'login.html';
+    }
     return;
   }
 
-  const data = await response.json();
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (err) {
+    console.error('Failed to parse API response JSON:', err);
+  }
 
   if (!response.ok) {
-    // Use the backend's own message when available — controllers return
-    // { success: false, message: "..." } for every non-2xx response.
     throw new Error(data.message || `Request failed (${response.status})`);
   }
 

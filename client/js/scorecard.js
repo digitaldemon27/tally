@@ -138,8 +138,10 @@ async function editEntry(entryId, note, label) {
  * @param {string} entryId — MongoDB _id string
  */
 async function deleteEntry(entryId) {
-  await apiRequest(`/scorecard/${entryId}`, { method: 'DELETE' });
-  // Backend returns: { success: true, message: "Entry deleted successfully" }
+  await apiRequest('/scorecard', {
+    method: 'DELETE',
+    body: JSON.stringify({ entryIds: [entryId] })
+  });
   // Filter from local state — response body has no updated entry to sync.
   todayEntries = todayEntries.filter(e => e._id !== entryId);
   renderTodayEntries();
@@ -188,6 +190,11 @@ function renderHistoricalEntries(entries, dateString) {
   // Historical view: hide the add-entry button — mutations are today-only
   if (addBtn) addBtn.style.display = 'none';
 
+  // Hide selection bar if active when switching to history
+  const bar = document.getElementById('scorecard-action-bar');
+  if (bar) bar.classList.remove('is-visible');
+  if (list) list.classList.remove('selection-mode');
+
   if (heading) heading.textContent = formatDateLong(new Date(dateString + 'T00:00:00'));
   if (subhead) subhead.textContent = 'Read-only — entries can only be added or edited for today.';
 
@@ -220,7 +227,7 @@ function renderHistoricalEntries(entries, dateString) {
  */
 function buildEntryRow(entry, editable) {
   const li = document.createElement('li');
-  li.className = 'entry-row';
+  li.className = `entry-row entry-row--${entry.label}`;
   li.setAttribute('role', 'listitem');
   li.dataset.id = entry._id;
 
@@ -228,6 +235,10 @@ function buildEntryRow(entry, editable) {
   const labelMeta = LABEL_META[entry.label] || LABEL_META.neutral;
 
   li.innerHTML = `
+    ${editable ? `
+    <div class="card-select-wrap" style="position:relative; top:0; left:0; display:flex; align-items:center; margin-right:var(--space-3);">
+      <input type="checkbox" class="card-select-checkbox js-entry-select" data-id="${escSC(entry._id)}" aria-label="Select entry" />
+    </div>` : ''}
     <span class="entry-label-badge entry-label-badge--${entry.label}"
           aria-label="${escSC(entry.label)}">
       ${labelMeta.symbol}
@@ -249,6 +260,9 @@ function buildEntryRow(entry, editable) {
           <button class="overflow-menu__item" role="menuitem" data-action="edit">Edit</button>
         </li>
         <li>
+          <button class="overflow-menu__item" role="menuitem" data-action="select">Select</button>
+        </li>
+        <li>
           <button class="overflow-menu__item overflow-menu__item--danger" role="menuitem" data-action="delete">Delete</button>
         </li>
       </ul>
@@ -263,6 +277,19 @@ function buildEntryRow(entry, editable) {
     menu.querySelector('[data-action="edit"]').addEventListener('click', () => {
       closeAllOverflowMenus();
       openEntryModal('edit', entry);
+    });
+
+    menu.querySelector('[data-action="select"]').addEventListener('click', () => {
+      closeAllOverflowMenus();
+      const container = document.getElementById('entry-list');
+      if (container) {
+        container.classList.add('selection-mode');
+        const cb = li.querySelector('.js-entry-select');
+        if (cb) {
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
     });
 
     menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
@@ -289,46 +316,146 @@ const LABEL_META = {
    TODO: consider replacing with a real calendar picker widget later.
    ============================================================ */
 
+/* ============================================================
+   SIDEBAR — Calendar Widget
+   ============================================================ */
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-indexed
+
 function buildSidebar() {
-  const list = document.getElementById('sidebar-date-list');
-  if (!list) return;
-  list.innerHTML = '';
+  wireCalendarControls();
+  renderCalendar();
+}
 
-  // "Today" shortcut — always at the top
-  const todayItem = document.createElement('li');
-  todayItem.innerHTML = `
-    <button class="sidebar-date-btn sidebar-date-btn--today is-active"
-            data-date="today"
-            type="button">
-      <span class="sidebar-date-btn__label">Today</span>
-      <span class="sidebar-date-btn__sub">${formatDateShort(new Date())}</span>
-    </button>`;
-  todayItem.querySelector('button').addEventListener('click', () => fetchTodayEntries());
-  list.appendChild(todayItem);
+function wireCalendarControls() {
+  const prevBtn = document.getElementById('cal-prev-month');
+  const nextBtn = document.getElementById('cal-next-month');
 
-  // Last 14 days (excluding today, which is covered above)
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = toISODateString(d);
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      calendarMonth--;
+      if (calendarMonth < 0) {
+        calendarMonth = 11;
+        calendarYear--;
+      }
+      renderCalendar();
+    });
+  }
 
-    const item = document.createElement('li');
-    item.innerHTML = `
-      <button class="sidebar-date-btn"
-              data-date="${dateStr}"
-              type="button">
-        <span class="sidebar-date-btn__label">${formatDateShort(d)}</span>
-        <span class="sidebar-date-btn__sub">${d.toLocaleDateString('en-US', { weekday: 'long' })}</span>
-      </button>`;
-    item.querySelector('button').addEventListener('click', () => fetchEntriesForDate(dateStr));
-    list.appendChild(item);
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      calendarMonth++;
+      if (calendarMonth > 11) {
+        calendarMonth = 0;
+        calendarYear++;
+      }
+      renderCalendar();
+    });
+  }
+}
+
+function renderCalendar() {
+  const monthTitle = document.getElementById('cal-month-title');
+  const daysGrid = document.getElementById('calendar-days-grid');
+  if (!monthTitle || !daysGrid) return;
+
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
+  monthTitle.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+  daysGrid.innerHTML = '';
+
+  const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
+  const lastDay = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+
+  // Padding empty cells
+  for (let i = 0; i < firstDayIndex; i++) {
+    const emptyCell = document.createElement('div');
+    daysGrid.appendChild(emptyCell);
+  }
+
+  const today = new Date();
+  const todayStr = toISODateString(today);
+  const activeVal = currentViewDate === 'today' ? todayStr : currentViewDate;
+
+  for (let day = 1; day <= lastDay; day++) {
+    const dObj = new Date(calendarYear, calendarMonth, day);
+    const dateStr = toISODateString(dObj);
+    const isFuture = dObj > today;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = day;
+    btn.className = 'cal-day-btn';
+    btn.dataset.date = dateStr;
+
+    // Calendar day styles
+    btn.style.width = '100%';
+    btn.style.aspectRatio = '1';
+    btn.style.borderRadius = '50%';
+    btn.style.fontSize = '0.8125rem';
+    btn.style.fontWeight = '600';
+    btn.style.border = 'none';
+    btn.style.background = 'none';
+    btn.style.cursor = 'pointer';
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+    btn.style.transition = 'background 0.2s, color 0.2s';
+
+    if (isFuture) {
+      btn.style.opacity = '0.25';
+      btn.style.cursor = 'not-allowed';
+      btn.disabled = true;
+    } else {
+      if (dateStr === todayStr) {
+        btn.style.border = '1.5px solid var(--moss)';
+      }
+      if (dateStr === activeVal) {
+        btn.style.background = 'var(--moss)';
+        btn.style.color = 'var(--white)';
+        btn.style.fontWeight = '700';
+      } else {
+        btn.addEventListener('mouseenter', () => {
+          if (btn.style.background === 'none' || btn.style.background === '') {
+            btn.style.background = 'var(--stone)';
+          }
+        });
+        btn.addEventListener('mouseleave', () => {
+          if (btn.style.background === 'var(--stone)') {
+            btn.style.background = 'none';
+          }
+        });
+      }
+
+      btn.addEventListener('click', () => {
+        if (dateStr === todayStr) {
+          fetchTodayEntries();
+        } else {
+          fetchEntriesForDate(dateStr);
+        }
+      });
+    }
+
+    daysGrid.appendChild(btn);
   }
 }
 
 function updateSidebarActiveDate(dateValue) {
-  document.querySelectorAll('.sidebar-date-btn').forEach(btn => {
-    btn.classList.toggle('is-active', btn.dataset.date === dateValue);
-  });
+  // Sync calendar month/year viewport to match selected historical date if month changes
+  if (dateValue && dateValue !== 'today') {
+    const parts = dateValue.split('-');
+    if (parts.length === 3) {
+      calendarYear = parseInt(parts[0], 10);
+      calendarMonth = parseInt(parts[1], 10) - 1;
+    }
+  } else if (dateValue === 'today') {
+    calendarYear = new Date().getFullYear();
+    calendarMonth = new Date().getMonth();
+  }
+  renderCalendar();
 }
 
 /* ============================================================
@@ -476,6 +603,8 @@ function openConfirmDeleteEntry(entryId, notePreview) {
 
   // Remove previous listener by cloning the button
   const newConfirm = confirmBtn.cloneNode(true);
+  newConfirm.disabled = false;
+  newConfirm.textContent = 'Delete';
   confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
 
   newConfirm.addEventListener('click', async () => {
@@ -616,6 +745,31 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.overflow-menu')) closeAllOverflowMenus();
   });
+
+  const entryList = document.getElementById('entry-list');
+  if (entryList) {
+    initMultiSelect({
+      containerEl: entryList,
+      checkboxSelector: '.js-entry-select',
+      actionBarId: 'scorecard-action-bar',
+      countId: 'scorecard-select-count',
+      cancelBtnId: 'scorecard-cancel-select-btn',
+      deleteBtnId: 'scorecard-delete-selected-btn',
+      itemNoun: 'entry',
+      onDelete: async (ids) => {
+        try {
+          await apiRequest('/scorecard', {
+            method: 'DELETE',
+            body: JSON.stringify({ entryIds: ids })
+          });
+          todayEntries = todayEntries.filter(e => !ids.includes(e._id));
+          renderTodayEntries();
+        } catch (err) {
+          showMainError(err.message || 'Failed to delete selected entries.');
+        }
+      }
+    });
+  }
 
   // Load today's entries — the initial happy path
   fetchTodayEntries();

@@ -48,7 +48,7 @@ export const registerUser = async (req, res) => {
         await redisClient.set(pendingUserKey(token), JSON.stringify(tempPayload), { EX: 15 * 60 })
         await redisClient.set(cooldownKey(email), "true", { EX: 60 });
 
-        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${token}`;
+        const verificationLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email.html?token=${token}`;
         //remove the next condition when deployed.
         if (process.env.NODE_ENV === "development") {
             console.log("Verification Token:", token);

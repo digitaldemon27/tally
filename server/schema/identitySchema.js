@@ -13,6 +13,16 @@ const identitySchema = new mongoose.Schema({
     required: [true, "Name is required"],
     trim: true
   },
+  description: {
+    type: String,
+    trim: true,
+    default: ""
+  },
+  color: {
+    type: String,
+    trim: true,
+    default: "moss"
+  },
   createdAt: {
     type: Date,
     default: Date.now

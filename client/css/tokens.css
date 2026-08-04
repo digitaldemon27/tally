@@ -34,10 +34,15 @@
 
   /* --- Accent Palette (identity card colors) --- */
   --accent-blue:  #5B6FA6;  /* slate blue */
+  --accent-blue-light: #F0F3FA;
   --accent-terra: #B05C3A;  /* terracotta */
+  --accent-terra-light: #FAF2EE;
   --accent-plum:  #7A5C9A;  /* plum */
+  --accent-plum-light: #F6F0FA;
   --accent-teal:  #3A8A7A;  /* teal */
+  --accent-teal-light: #EEFAF7;
   --accent-amber: #C47D2E;  /* warm amber */
+  --accent-amber-light: #FAF5EE;
 
   /* --- Spacing Scale (4px base) --- */
   --space-1:  0.25rem;   /*  4px */

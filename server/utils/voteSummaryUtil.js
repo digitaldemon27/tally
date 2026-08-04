@@ -52,16 +52,28 @@ export const getVoteSummaryForHabit = async (habitId, userId) => {
     // using server-UTC today for NMT — timezone-aware follow-up is deferred (see getVoteSummaryController TODO)
     const serverToday = new Date();
     serverToday.setUTCHours(0, 0, 0, 0);
-    const missedYesterday = computeMissedYesterday(last7DaysLogs, serverToday);
 
-    // Compute Rolling Consistency
     const createdDate = new Date(habit.createdAt);
     createdDate.setUTCHours(0, 0, 0, 0);
+
+    // Yesterday starting boundary (24 hours before today midnight UTC)
+    const yesterdayBoundary = serverToday.getTime() - 24 * 60 * 60 * 1000;
+
+    let missedYesterday = false;
+    if (createdDate.getTime() < yesterdayBoundary) {
+        missedYesterday = computeMissedYesterday(last7DaysLogs, serverToday);
+    }
+
+    // Compute Rolling Consistency
     const msPerDay = 1000 * 60 * 60 * 24;
     const daysBetween = Math.max(0, Math.floor((serverToday.getTime() - createdDate.getTime()) / msPerDay));
     // activeDays is capped at 30, and +1 makes it inclusive of the creation day (never 0)
     const activeDays = Math.min(30, daysBetween + 1);
     const rollingConsistency = Math.round((monthlyCount / activeDays) * 100);
 
-    return { weeklyCount, monthlyCount, totalVotes, missedYesterday, rollingConsistency };
+    // Compute Weekly Consistency
+    const activeDays7 = Math.min(7, daysBetween + 1);
+    const weeklyConsistency = Math.round((weeklyCount / activeDays7) * 100);
+
+    return { weeklyCount, monthlyCount, totalVotes, missedYesterday, rollingConsistency, weeklyConsistency };
 };

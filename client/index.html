@@ -466,9 +466,20 @@
             <div class="form-success" id="form-success" aria-live="polite">
               <div class="form-success__icon" aria-hidden="true">🗳️</div>
               <h3 style="margin-bottom: var(--space-3);">Your first vote is cast.</h3>
-              <p class="text-slate" style="font-size: 0.9375rem; max-width: 36ch; margin-inline: auto;">
+              <p class="text-slate" style="font-size: 0.9375rem; max-width: 36ch; margin-inline: auto; margin-bottom: var(--space-6);">
                 Welcome to Tally. Head to your inbox to confirm your email, then start building your identity.
               </p>
+
+              <!-- Resend Verification Area -->
+              <div style="display:flex; flex-direction:column; align-items:center; gap:var(--space-3);">
+                <button type="button" class="btn btn-secondary" id="resend-verification-btn" style="min-width: 200px;">
+                  Resend verification email
+                </button>
+                <div class="field-server-error" id="resend-server-error" role="alert" style="margin: 0; max-width: 280px; display: none;"></div>
+                <div id="resend-success-msg" class="text-moss" style="display: none; font-size: 0.875rem; font-weight: 600; color: var(--moss);">
+                  Verification email resent!
+                </div>
+              </div>
             </div>
 
           </form>

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { clusterConnection } from "../config/dbConfig.js";
+import { usernameRegex, gmailRegex } from "../validators/signupValidator.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -9,10 +10,9 @@ const userSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function (v) {
-        // Must not contain any spaces and must not contain any uppercase letters
-        return typeof v === "string" && !/\s/.test(v) && !/[A-Z]/.test(v);
+        return typeof v === "string" && usernameRegex.test(v);
       },
-      message: "Username must be all lowercase and must not contain spaces."
+      message: "Username must be 3–30 characters long and may contain letters, numbers, dots (.), underscores (_) and hyphens (-). It cannot start or end with a special character or contain consecutive special characters."
     }
   },
   email: {
@@ -31,10 +31,9 @@ const userSchema = new mongoose.Schema({
     },
     validate: {
       validator: function (v) {
-        // Simple regex validation for email structure (e.g. name@domain.ext)
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        return typeof v === "string" && gmailRegex.test(v);
       },
-      message: "Please enter a valid email address."
+      message: "Please enter a valid Gmail address (6-30 characters, no consecutive periods, cannot start or end with a period)."
     }
   },
   is_email_verified: {

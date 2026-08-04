@@ -150,39 +150,6 @@
           </div>
         </div>
 
-        <!-- Frequency — segmented control (recognition over recall; only 3 options) -->
-        <div class="field-group">
-          <p class="field-label" id="frequency-label">Frequency <span class="field-required" aria-hidden="true">*</span></p>
-          <div class="segmented-control" role="group" aria-labelledby="frequency-label">
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-frequency" value="daily" checked /><span>Every day</span>
-            </label>
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-frequency" value="weekly_3x" /><span>3× a week</span>
-            </label>
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-frequency" value="weekly_5x" /><span>5× a week</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Tracking type — segmented control -->
-        <div class="field-group">
-          <p class="field-label" id="tracking-label">How you track it <span class="field-required" aria-hidden="true">*</span></p>
-          <!-- NOTE: changing trackingType after votes are logged is allowed in this mock version.
-               Real backend will need to handle backward compatibility when this changes. -->
-          <div class="segmented-control" role="group" aria-labelledby="tracking-label">
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-tracking" value="boolean" checked /><span>Done / Not done</span>
-            </label>
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-tracking" value="count" /><span>Count</span>
-            </label>
-            <label class="segmented-control__option">
-              <input type="radio" name="habit-tracking" value="duration" /><span>Duration</span>
-            </label>
-          </div>
-        </div>
 
         <input type="hidden" id="habit-edit-id" value="" />
 

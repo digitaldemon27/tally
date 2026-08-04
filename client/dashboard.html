@@ -95,14 +95,42 @@
             + New Identity
           </button>
         <!-- Buddies section — list of identities where you are an accountability buddy -->
-        <!-- TODO: wire to backend — GET /api/buddy -->
-        <div id="buddies-support-section" style="margin-top: var(--space-12); padding-top: var(--space-8); border-top: 1.5px solid var(--stone-dark); display:none;">
-          <div class="dashboard-section-head" style="margin-bottom: var(--space-4);">
-            <h2 class="section-title" style="font-size:1.25rem;">🤝 Buddies You Support</h2>
-            <p class="section-subtitle">Identities where you are serving as an accountability buddy.</p>
+        <div id="buddies-support-section" style="margin-top: var(--space-12); padding-top: var(--space-8); border-top: 1.5px solid var(--stone-dark);">
+          <div class="dashboard-section-head" style="margin-bottom: var(--space-6); display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:var(--space-4);">
+            <div>
+              <p class="eyebrow">Partnership</p>
+              <h2 class="section-title" style="font-size:1.25rem; margin:0;">🤝 Buddies You Support</h2>
+              <p class="section-subtitle">Identities where you are serving as an accountability buddy.</p>
+            </div>
+            
+            <!-- Manual claim form -->
+            <form id="buddy-claim-form" style="display:flex; gap:var(--space-2); align-items:center; flex-wrap:wrap;" novalidate>
+              <label class="sr-only" for="input-buddy-token">Invite link or code</label>
+              <input 
+                type="text" 
+                id="input-buddy-token" 
+                placeholder="Paste invite link or code..." 
+                class="field-input" 
+                style="padding:6px 12px; font-size:0.875rem; width:220px; height:34px; border-radius:var(--radius-md);" 
+              />
+              <button type="submit" class="btn btn-secondary btn-sm" id="buddy-claim-submit-btn" style="height:34px; border-radius:var(--radius-md);">
+                Claim Invite
+              </button>
+            </form>
           </div>
+
+          <div class="field-server-error" id="buddy-claim-error" role="alert" style="margin-bottom:var(--space-4);"></div>
+
           <div class="grid-3" id="buddies-grid" role="list" aria-label="Identities you support as a buddy">
-            <!-- partner cards injected by initDashboard() -->
+            <!-- partner cards injected by JS -->
+          </div>
+
+          <!-- Empty state for Buddies -->
+          <div class="dashboard-empty" id="buddies-empty-state" style="display:none; padding:var(--space-8) var(--space-4);">
+            <div class="form-success__icon" aria-hidden="true" style="font-size:2.5rem; margin-bottom:var(--space-2);">🤝</div>
+            <p class="empty-state__text" style="font-size:0.9375rem; color:var(--text-muted); margin-bottom:0;">
+              You aren't supporting any buddies yet. Paste an invite link or code above to get started.
+            </p>
           </div>
         </div>
 

@@ -1,7 +1,5 @@
 import { z } from "zod";
-
-// Helper regex to ensure no uppercase letters and no whitespace
-const usernameRegex = /^[^A-Z\s]+$/;
+import { usernameRegex, gmailRegex } from "./signupValidator.js";
 
 /**
  * Zod schema for validating user input during Registration / Creation.
@@ -17,11 +15,8 @@ export const userRegisterValidator = z.object({
   username: z
     .string({ required_error: "Username is required" })
     .transform((val) => val.trim())
-    .refine((val) => !/\s/.test(val), {
-      message: "Username must not contain spaces",
-    })
-    .refine((val) => !/[A-Z]/.test(val), {
-      message: "Username must be all lowercase",
+    .refine((val) => usernameRegex.test(val), {
+      message: "Username must be 3–30 characters long and may contain letters, numbers, dots (.), underscores (_) and hyphens (-). It cannot start or end with a special character or contain consecutive special characters.",
     }),
   email: z
     .string({ required_error: "Email is required" })
@@ -33,8 +28,9 @@ export const userRegisterValidator = z.object({
       }
       return emailVal;
     })
-    // Pipe the transformed output to ensure it matches a valid email layout
-    .pipe(z.string().email("Please enter a valid email address")),
+    .refine((val) => gmailRegex.test(val), {
+      message: "Please enter a valid Gmail address (6-30 characters, no consecutive periods, cannot start or end with a period).",
+    }),
   password: z
     .string({ required_error: "Password is required" })
     .min(6, "Password must be at least 6 characters long"),

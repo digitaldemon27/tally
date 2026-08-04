@@ -16,8 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initSignupForm();
   initEmailVerification(); // no-ops if not on verify-email.html
   initSetPasswordForm();   // no-ops if not on set-password.html
-  initDashboard();         // no-ops if not on dashboard.html
-  initIdentityDetail();    // no-ops if not on identity.html
+  // Mock implementations disabled in favor of real db-backed integrations in dashboard.js and identity.js
+  // initDashboard();
+  // initIdentityDetail();
   updateNavNotificationBadge();
 });
 
@@ -213,83 +214,10 @@ function initVoteDemo() {
    SIGN-UP FORM — Full client-side validation
    ============================================================ */
 function initSignupForm() {
+  // signup.js owns sign-up handling if present
+  if (typeof window.initSignupFormLive === 'function') return;
   const form = document.getElementById('signup-form');
   if (!form) return;
-
-  const usernameInput = document.getElementById('input-username');
-  const emailInput = document.getElementById('input-email');
-  const submitBtn = document.getElementById('submit-btn');
-  const formBody = document.getElementById('form-body');
-  const formSuccess = document.getElementById('form-success');
-
-  // --- Debounced validators --------------------------------
-  const debouncedValidateUsername = debounce(() => validateUsername(usernameInput), 350);
-  const debouncedValidateEmail = debounce(() => validateEmail(emailInput), 400);
-
-  // Attach listeners
-  usernameInput.addEventListener('input', debouncedValidateUsername);
-  usernameInput.addEventListener('blur', () => validateUsername(usernameInput));
-
-  emailInput.addEventListener('input', debouncedValidateEmail);
-  emailInput.addEventListener('blur', () => validateEmail(emailInput));
-
-  // --- Dynamic Submit Button State -------------------------
-  function checkFormValidity() {
-    const usernameVal = usernameInput.value.trim();
-    const emailVal = emailInput.value.trim();
-
-    // Check Username: lowercase only, no spaces, not empty, min 2 chars, max 30 chars
-    const usernameOk = usernameVal.length >= 2 &&
-      usernameVal.length <= 30 &&
-      !/\s/.test(usernameVal) &&
-      !/[A-Z]/.test(usernameVal);
-
-    // Check Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    const emailOk = emailRegex.test(emailVal) &&
-      (emailVal.match(/@/g) || []).length === 1 &&
-      !emailVal.split('@')[1].startsWith('.');
-
-    return usernameOk && emailOk;
-  }
-
-  function updateSubmitButtonState() {
-    submitBtn.disabled = !checkFormValidity();
-  }
-
-  // Set initial state & add dynamic validation listeners
-  updateSubmitButtonState();
-  usernameInput.addEventListener('input', updateSubmitButtonState);
-  emailInput.addEventListener('input', updateSubmitButtonState);
-
-  // --- Submit ----------------------------------------------
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    // Run all validations synchronously on submit
-    const usernameOk = validateUsername(usernameInput);
-    const emailOk = validateEmail(emailInput);
-
-    if (!usernameOk || !emailOk) {
-      // Focus first invalid field
-      const firstInvalid = [usernameInput, emailInput]
-        .find(el => el.classList.contains('is-error'));
-      if (firstInvalid) firstInvalid.focus();
-      return;
-    }
-
-    // All valid — simulate submission (replace with real API call later)
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Casting your vote…';
-
-    // Simulated async — swap in success state after 1.2s
-    // TODO: wire to backend — POST /api/auth/register
-    setTimeout(() => {
-      formBody.style.display = 'none';
-      formSuccess.classList.add('visible');
-      formSuccess.focus();
-    }, 1200);
-  });
 }
 
 /* ---- Password show/hide toggle ---------------------------- */
@@ -372,24 +300,16 @@ function validateUsername(input) {
     setFieldState(input, 'error-username', 'error-username-text', 'icon-username', 'Enter a username.');
     return false;
   }
-  // Spaces anywhere
-  if (/\s/.test(raw)) {
-    setFieldState(input, 'error-username', 'error-username-text', 'icon-username', 'Username cannot contain spaces.');
-    return false;
-  }
-  // Capital letters
-  if (/[A-Z]/.test(raw)) {
-    setFieldState(input, 'error-username', 'error-username-text', 'icon-username', 'Username must be all lowercase (no capital letters).');
-    return false;
-  }
-  // Too short after trim
-  if (trimmed.length < 2) {
-    setFieldState(input, 'error-username', 'error-username-text', 'icon-username', 'Username must be at least 2 characters.');
-    return false;
-  }
-  // Too long
-  if (trimmed.length > 30) {
-    setFieldState(input, 'error-username', 'error-username-text', 'icon-username', 'Username must be under 30 characters.');
+
+  const usernameRegex = /^(?=.{3,30}$)[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
+  if (!usernameRegex.test(trimmed)) {
+    setFieldState(
+      input,
+      'error-username',
+      'error-username-text',
+      'icon-username',
+      'Username must be 3–30 characters long and may contain letters, numbers, dots (.), underscores (_) and hyphens (-). It cannot start or end with a special character or contain consecutive special characters.'
+    );
     return false;
   }
 
@@ -406,27 +326,10 @@ function validateEmail(input) {
     setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Enter your email address.');
     return false;
   }
-  // Spaces inside
-  if (/\s/.test(trimmed)) {
-    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', "Email can't contain spaces.");
-    return false;
-  }
-  // Basic format validation
-  // Must have exactly one @, a domain part, and a TLD
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  if (!emailRegex.test(trimmed)) {
-    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Enter a valid email address, like name@example.com.');
-    return false;
-  }
-  // Extra: reject double @
-  if ((trimmed.match(/@/g) || []).length > 1) {
-    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Enter a valid email address, like name@example.com.');
-    return false;
-  }
-  // Reject domain starting with dot (e.g. abc@.com)
-  const domainPart = trimmed.split('@')[1];
-  if (domainPart && domainPart.startsWith('.')) {
-    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Enter a valid email address, like name@example.com.');
+
+  const gmailRegex = /^(?=.{6,30}@gmail\.com$)(?!\.)(?!.*\.\.)(?!.*\.@)[A-Za-z0-9.]+@gmail\.com$/;
+  if (!gmailRegex.test(trimmed)) {
+    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Please enter a valid Gmail address.');
     return false;
   }
 
@@ -962,8 +865,19 @@ function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, 
   function updateBar() {
     const checkboxes = Array.from(containerEl.querySelectorAll(checkboxSelector + ':checked'));
     const count = checkboxes.length;
-    if (count > 0) {
-      countEl.textContent = `${count} ${count === 1 ? itemNoun : itemNoun + 's'} selected`;
+
+    // Toggle highlight class on the card
+    containerEl.querySelectorAll(checkboxSelector).forEach(cb => {
+      const card = cb.closest('.identity-card') || cb.closest('.habit-row') || cb.closest('.card-select-wrap')?.parentNode;
+      if (card) {
+        card.classList.toggle('is-selected', cb.checked);
+      }
+    });
+
+    countEl.textContent = `${count} ${count === 1 ? itemNoun : itemNoun + 's'} selected`;
+    freshDelete.disabled = (count === 0);
+
+    if (count > 0 || containerEl.classList.contains('selection-mode')) {
       bar.classList.add('is-visible');
     } else {
       bar.classList.remove('is-visible');
@@ -978,7 +892,67 @@ function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, 
 
   cancelBtn.addEventListener('click', () => {
     containerEl.querySelectorAll(checkboxSelector + ':checked').forEach(cb => { cb.checked = false; });
+    containerEl.classList.remove('selection-mode');
+    // Clear all is-selected highlights
+    containerEl.querySelectorAll('.is-selected').forEach(el => el.classList.remove('is-selected'));
     updateBar();
+  });
+
+  // Touch long press detection for mobile
+  let pressTimer = null;
+  let startX = 0;
+  let startY = 0;
+  let longPressed = false;
+
+  const cardSelector = itemNoun === 'identity' ? '.identity-card' : '.habit-row';
+
+  containerEl.addEventListener('touchstart', (e) => {
+    const card = e.target.closest(cardSelector);
+    if (!card) return;
+
+    if (containerEl.classList.contains('selection-mode')) return;
+
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    longPressed = false;
+
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      containerEl.classList.add('selection-mode');
+      const cb = card.querySelector(checkboxSelector);
+      if (cb) {
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, 600);
+  }, { passive: true });
+
+  containerEl.addEventListener('touchmove', (e) => {
+    if (pressTimer) {
+      const touch = e.touches[0];
+      if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    }
+  }, { passive: true });
+
+  containerEl.addEventListener('touchend', (e) => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    if (longPressed) {
+      e.preventDefault();
+    }
+  });
+
+  containerEl.addEventListener('touchcancel', () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
   });
 
   const freshDelete = deleteBtn.cloneNode(true);
@@ -992,9 +966,10 @@ function initMultiSelect({ containerEl, checkboxSelector, actionBarId, countId, 
       title: `Delete ${selectedIds.length} ${selectedIds.length === 1 ? itemNoun : itemNoun + 's'}?`,
       body: `This will permanently delete ${selectedIds.length} ${selectedIds.length === 1 ? itemNoun : itemNoun + 's'} and associated data. This cannot be undone.`,
       triggerEl: freshDelete,
-      onConfirm: () => {
-        onDelete(selectedIds);
+      onConfirm: async () => {
+        await onDelete(selectedIds);
         bar.classList.remove('is-visible');
+        containerEl.classList.remove('selection-mode');
       }
     });
   });
@@ -1026,8 +1001,26 @@ function openConfirmDelete({ title, body, onConfirm, triggerEl }) {
 
   // Clone to remove any previous event listener
   const freshConfirm = confirmBtn.cloneNode(true);
+  freshConfirm.disabled = false;
+  freshConfirm.textContent = 'Delete';
   confirmBtn.parentNode.replaceChild(freshConfirm, confirmBtn);
-  freshConfirm.addEventListener('click', () => { closeModal('confirm-delete-overlay'); onConfirm(); });
+
+  freshConfirm.addEventListener('click', async () => {
+    freshConfirm.disabled = true;
+    freshConfirm.textContent = 'Deleting…';
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    try {
+      if (onConfirm) await onConfirm();
+      closeModal('confirm-delete-overlay');
+    } catch (err) {
+      console.error('Delete action failed:', err);
+    } finally {
+      freshConfirm.disabled = false;
+      freshConfirm.textContent = 'Delete';
+      if (cancelBtn) cancelBtn.disabled = false;
+    }
+  });
 
   if (cancelBtn) {
     cancelBtn.onclick = () => closeModal('confirm-delete-overlay');
@@ -1834,22 +1827,22 @@ function wireHabitModalForm(identityId, onSuccess) {
    ============================================================ */
 
 function initBuddySection(identityId) {
+  initBuddySectionLive(identityId);
+}
+
+async function initBuddySectionLive(identityId) {
   const section = document.getElementById('buddy-section');
   if (!section) return;
 
-  // TODO: wire to backend — GET /api/buddy
-  const pairing = MOCK_BUDDY_PAIRINGS.find(p => p.identityId === identityId && p.ownerUserId === CURRENT_USER_ID && p.status === 'active');
-
-  section.innerHTML = `
-    <div class="buddy-section__header">
-      <h2 class="buddy-section__title" id="buddy-section-title">🤝 Accountability Buddy</h2>
-    </div>
-    <div id="buddy-content"></div>`;
-
-  const content = document.getElementById('buddy-content');
-
-async function initBuddySectionLive(identityId) {
-  const content = document.getElementById('buddy-section-content');
+  let content = document.getElementById('buddy-section-content') || document.getElementById('buddy-content');
+  if (!content) {
+    section.innerHTML = `
+      <div class="buddy-section__header">
+        <h2 class="buddy-section__title" id="buddy-section-title">🤝 Accountability Buddy</h2>
+      </div>
+      <div id="buddy-section-content"></div>`;
+    content = document.getElementById('buddy-section-content');
+  }
   if (!content) return;
 
   content.innerHTML = `

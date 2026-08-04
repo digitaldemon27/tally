@@ -46,6 +46,12 @@ export const updateIdentity = async (req, res) => {
         if (name !== undefined) {
             identity.name = name.trim();
         }
+        if (req.body.description !== undefined) {
+            identity.description = req.body.description.trim();
+        }
+        if (req.body.color !== undefined) {
+            identity.color = req.body.color.trim();
+        }
 
         // 4. Save the document to fire schema validation rules cleanly
         const updatedIdentity = await identity.save();

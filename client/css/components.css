@@ -1080,7 +1080,7 @@
    IDENTITY CARD
    ========================================== */
 .identity-card {
-  background-color: var(--white);
+  background-color: var(--card-accent-light, var(--white));
   border: 1.5px solid var(--stone-dark);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
@@ -1384,12 +1384,12 @@
    ========================================== */
 
 /* Map color names to CSS custom properties */
-.identity-card[data-color="moss"]  { --card-accent: var(--moss); }
-.identity-card[data-color="blue"]  { --card-accent: var(--accent-blue); }
-.identity-card[data-color="terra"] { --card-accent: var(--accent-terra); }
-.identity-card[data-color="plum"]  { --card-accent: var(--accent-plum); }
-.identity-card[data-color="teal"]  { --card-accent: var(--accent-teal); }
-.identity-card[data-color="amber"] { --card-accent: var(--accent-amber); }
+.identity-card[data-color="moss"]  { --card-accent: var(--moss); --card-accent-light: var(--moss-light); }
+.identity-card[data-color="blue"]  { --card-accent: var(--accent-blue); --card-accent-light: var(--accent-blue-light); }
+.identity-card[data-color="terra"] { --card-accent: var(--accent-terra); --card-accent-light: var(--accent-terra-light); }
+.identity-card[data-color="plum"]  { --card-accent: var(--accent-plum); --card-accent-light: var(--accent-plum-light); }
+.identity-card[data-color="teal"]  { --card-accent: var(--accent-teal); --card-accent-light: var(--accent-teal-light); }
+.identity-card[data-color="amber"] { --card-accent: var(--accent-amber); --card-accent-light: var(--accent-amber-light); }
 
 /* Left accent bar uses the mapped custom property */
 .identity-card::before {
@@ -1487,6 +1487,17 @@
   top: var(--space-4);
   left: var(--space-4);
   z-index: 3;
+  display: none !important;
+}
+
+.selection-mode .card-select-wrap {
+  display: flex !important;
+}
+
+.identity-card.is-selected {
+  outline: 2px solid var(--moss) !important;
+  background-color: var(--stone-light) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .card-select-checkbox {
@@ -2506,7 +2517,7 @@
 
 .scorecard-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 25% 75%;
   gap: var(--space-8);
   align-items: start;
   padding-top: var(--space-12);
@@ -2531,6 +2542,8 @@
 .scorecard-sidebar {
   position: sticky;
   top: calc(64px + var(--space-6)); /* stick below nav */
+  border-right: 1.5px solid var(--stone-dark);
+  padding-right: var(--space-6);
 }
 
 .sidebar-header {
@@ -2670,6 +2683,18 @@
   box-shadow: var(--shadow-sm);
 }
 
+.entry-row--positive {
+  background: var(--moss-light) !important;
+}
+
+.entry-row--negative {
+  background: #FFF5F5 !important;
+}
+
+.entry-row--neutral {
+  background: var(--white) !important;
+}
+
 /* Entry note text */
 .entry-note {
   flex: 1;
@@ -2794,6 +2819,10 @@
   outline: 2px solid var(--moss);
   outline-offset: 3px;
   border-radius: var(--radius-full);
+}
+
+.habit-row--archived {
+  opacity: 0.55;
 }
 
 /* ==========================================

@@ -18,8 +18,14 @@ export const login = async (req, res) => {
             })
         }
 
-        //if they both are present than we will find the user 
-        const user = await User.findOne({ email }).select("+hashed_password");
+        const loginIdentifier = email.trim().toLowerCase();
+        // find user by email or username
+        const user = await User.findOne({
+            $or: [
+                { email: loginIdentifier },
+                { username: email.trim() }
+            ]
+        }).select("+hashed_password");
 
         //if user does not exist than send 401 invalid credential
         if (!user) {

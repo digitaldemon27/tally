@@ -28,7 +28,7 @@ export const generateLinkController = async (req, res) => {
             { upsert: true, new: true }
         );
 
-        const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
         const claimLink = `${baseUrl}/buddy-claim.html?token=${pairing.token}`;
 
         return res.status(200).json({

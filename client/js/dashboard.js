@@ -82,6 +82,56 @@ async function initDashboardPage() {
   renderGrid();
   renderBuddiesSection();
 
+  // Wire manual buddy invite claim form
+  const claimForm = document.getElementById('buddy-claim-form');
+  const claimInput = document.getElementById('input-buddy-token');
+  const claimSubmit = document.getElementById('buddy-claim-submit-btn');
+  const claimError = document.getElementById('buddy-claim-error');
+
+  if (claimForm && claimInput) {
+    claimForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (claimError) {
+        claimError.classList.remove('visible');
+        claimError.textContent = '';
+      }
+
+      const rawVal = claimInput.value.trim();
+      if (!rawVal) return;
+
+      claimSubmit.disabled = true;
+      const originalText = claimSubmit.textContent;
+      claimSubmit.textContent = 'Claiming...';
+
+      let token = rawVal;
+      // Extract token if rawVal is a full URL or contains query parameters
+      try {
+        if (rawVal.startsWith('http://') || rawVal.startsWith('https://') || rawVal.includes('?')) {
+          const urlObj = new URL(rawVal.startsWith('http') ? rawVal : 'http://' + rawVal);
+          const urlParams = new URLSearchParams(urlObj.search);
+          const urlToken = urlParams.get('token');
+          if (urlToken) token = urlToken;
+        }
+      } catch (err) {
+        console.error('Failed to parse pasted URL:', err);
+      }
+
+      try {
+        await apiRequest(`/api/buddy/claim/${token}`, { method: 'POST' });
+        claimInput.value = '';
+        renderBuddiesSection();
+      } catch (err) {
+        if (claimError) {
+          claimError.textContent = err.message || 'Failed to claim buddy link.';
+          claimError.classList.add('visible');
+        }
+      } finally {
+        claimSubmit.disabled = false;
+        claimSubmit.textContent = originalText;
+      }
+    });
+  }
+
   // Multi-select bulk delete initialization
   initMultiSelect({
     containerEl: grid,
@@ -96,7 +146,7 @@ async function initDashboardPage() {
       try {
         await apiRequest('/api/identity', {
           method: 'DELETE',
-          body: JSON.stringify({ ids })
+          body: JSON.stringify({ identityIds: ids })
         });
         STATE_IDENTITIES = STATE_IDENTITIES.filter(i => !ids.includes(getItemId(i)));
         renderGrid();
@@ -108,9 +158,7 @@ async function initDashboardPage() {
 
   // Wire the "New Identity" modal triggers
   wireIdentityModal(openBtn, renderGrid);
-  if (openBtnEmpty) {
-    openBtnEmpty.addEventListener('click', () => openIdentityModalForLive('create', null, openBtnEmpty, renderGrid));
-  }
+  wireIdentityModal(openBtnEmpty, renderGrid);
 
   function renderGrid() {
     grid.innerHTML = '';
@@ -118,10 +166,12 @@ async function initDashboardPage() {
     if (STATE_IDENTITIES.length === 0) {
       grid.style.display = 'none';
       if (emptyState) emptyState.style.display = 'block';
+      if (openBtn) openBtn.style.display = 'none';
       return;
     }
     grid.style.display = '';
     if (emptyState) emptyState.style.display = 'none';
+    if (openBtn) openBtn.style.display = '';
 
     STATE_IDENTITIES.forEach(identity => grid.appendChild(buildIdentityCardLive(identity, renderGrid)));
     initOverflowMenus(grid);
@@ -130,19 +180,24 @@ async function initDashboardPage() {
   async function renderBuddiesSection() {
     const buddiesSection = document.getElementById('buddies-support-section');
     const buddiesGrid = document.getElementById('buddies-grid');
+    const emptyState = document.getElementById('buddies-empty-state');
     if (!buddiesSection || !buddiesGrid) return;
 
     try {
-      const res = await apiRequest('/buddy', { method: 'GET' });
+      const res = await apiRequest('/api/buddy', { method: 'GET' });
       const pairings = Array.isArray(res?.pairings) ? res.pairings : (Array.isArray(res) ? res : []);
-
-      if (pairings.length === 0) {
-        buddiesSection.style.display = 'none';
-        return;
-      }
 
       buddiesSection.style.display = 'block';
       buddiesGrid.innerHTML = '';
+
+      if (pairings.length === 0) {
+        buddiesGrid.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+      }
+
+      buddiesGrid.style.display = 'grid';
+      if (emptyState) emptyState.style.display = 'none';
 
       pairings.forEach(pairing => {
         const identityId = pairing.identityId || pairing._id;
@@ -178,8 +233,7 @@ async function initDashboardPage() {
         buddiesGrid.appendChild(card);
       });
     } catch (err) {
-      console.warn('Failed to fetch buddy pairings:', err);
-      buddiesSection.style.display = 'none';
+      console.error('Failed to load buddy dashboard:', err);
     }
   }
 }
@@ -243,10 +297,23 @@ function buildIdentityCardLive(identity, onUpdate) {
   // Fetch live habits & stats for this card
   loadCardStats(identity, article);
 
-  // Card click navigation
+  // Card click navigation (toggles checkbox if in selection/delete-selection mode)
   article.querySelector('.js-card-nav').addEventListener('click', (e) => {
-    if (!e.target.closest('.overflow-menu') && !e.target.closest('.card-select-wrap') && !e.target.closest('a')) {
-      window.location.href = `identity.html?id=${encodeURIComponent(id)}`;
+    const grid = document.getElementById('identity-grid');
+    if (grid && grid.classList.contains('selection-mode')) {
+      // Toggle selection in bulk delete mode
+      if (!e.target.closest('.overflow-menu') && !e.target.closest('.card-select-wrap') && !e.target.closest('a')) {
+        const cb = article.querySelector('.js-identity-select');
+        if (cb) {
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    } else {
+      // Normal click navigation
+      if (!e.target.closest('.overflow-menu') && !e.target.closest('.card-select-wrap') && !e.target.closest('a')) {
+        window.location.href = `identity.html?id=${encodeURIComponent(id)}`;
+      }
     }
   });
 
@@ -259,23 +326,15 @@ function buildIdentityCardLive(identity, onUpdate) {
 
   article.querySelector('[data-action="delete"]').addEventListener('click', () => {
     closeAllOverflowMenus();
-    openConfirmDelete({
-      title: `Delete "${identity.name}"?`,
-      body: `This will permanently delete the "${identity.name}" identity and all its habits. This cannot be undone.`,
-      triggerEl: trigger,
-      onConfirm: async () => {
-        try {
-          await apiRequest('/api/identity', {
-            method: 'DELETE',
-            body: JSON.stringify({ ids: [id] })
-          });
-          STATE_IDENTITIES = STATE_IDENTITIES.filter(i => getItemId(i) !== id);
-          if (onUpdate) onUpdate();
-        } catch (err) {
-          alert(err.message || 'Failed to delete identity.');
-        }
-      },
-    });
+    const container = document.getElementById('identity-grid');
+    if (container) {
+      container.classList.add('selection-mode');
+      const cb = article.querySelector('.js-identity-select');
+      if (cb) {
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
   });
 
   return article;
@@ -335,26 +394,38 @@ function openIdentityModalLive(mode, identity, triggerEl, onSuccess) {
   const overlay = document.getElementById('identity-modal-overlay');
   if (!overlay) return;
 
+  const form = document.getElementById('identity-form');
+  if (!form) return;
+
+  // Clone to strip old listeners
+  const freshForm = form.cloneNode(true);
+  form.parentNode.replaceChild(freshForm, form);
+
   const titleEl = document.getElementById('identity-modal-title');
   const submitBtn = document.getElementById('identity-submit-btn');
-  const nameInput = document.getElementById('input-identity-name');
-  const descInput = document.getElementById('input-identity-desc');
-  const editIdInput = document.getElementById('identity-edit-id');
-  const form = document.getElementById('identity-form');
+  const nameInput = freshForm.querySelector('#input-identity-name');
+  const descInput = freshForm.querySelector('#input-identity-description');
+  const editIdInput = freshForm.querySelector('#identity-edit-id');
+
+  if (!nameInput || !descInput || !submitBtn || !editIdInput) return;
+
+  // Reset validation feedback classes and error messages on open
+  clearFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name');
+
+  const editId = mode === 'edit' && identity ? getItemId(identity) : '';
 
   if (mode === 'edit' && identity) {
-    const id = getItemId(identity);
     if (titleEl) titleEl.textContent = 'Edit Identity';
     if (submitBtn) submitBtn.textContent = 'Save Changes';
     if (nameInput) nameInput.value = identity.name || '';
     if (descInput) descInput.value = identity.description || '';
-    if (editIdInput) editIdInput.value = id;
+    if (editIdInput) editIdInput.value = editId;
     const colorRadio = overlay.querySelector(`input[name="identity-color"][value="${identity.color || 'moss'}"]`);
     if (colorRadio) colorRadio.checked = true;
   } else {
     if (titleEl) titleEl.textContent = 'New Identity';
     if (submitBtn) submitBtn.textContent = 'Create Identity';
-    if (form) form.reset();
+    if (freshForm) freshForm.reset();
     if (editIdInput) editIdInput.value = '';
     const defaultColor = overlay.querySelector('input[name="identity-color"][value="moss"]');
     if (defaultColor) defaultColor.checked = true;
@@ -365,44 +436,118 @@ function openIdentityModalLive(mode, identity, triggerEl, onSuccess) {
   const closeBtn = document.getElementById('identity-modal-close-btn');
   if (closeBtn) closeBtn.onclick = () => closeModal('identity-modal-overlay');
 
-  if (form && !form._wiredLive) {
-    form._wiredLive = true;
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const description = descInput ? descInput.value.trim() : '';
-      const color = overlay.querySelector('input[name="identity-color"]:checked')?.value || 'moss';
-      const editId = editIdInput ? editIdInput.value : '';
+  const checkValidation = (showError = false) => {
+    const nameVal = nameInput.value.trim();
 
-      submitBtn.disabled = true;
-
-      try {
-        if (editId) {
-          const res = await apiRequest(`/api/identity/${editId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ name, description, color })
-          });
-          const updated = res?.data || res;
-          const idx = STATE_IDENTITIES.findIndex(i => getItemId(i) === editId);
-          if (idx !== -1) STATE_IDENTITIES[idx] = updated;
-        } else {
-          const res = await apiRequest('/api/identity', {
-            method: 'POST',
-            body: JSON.stringify({ name, description, color })
-          });
-          const created = res?.data || res;
-          STATE_IDENTITIES.push(created);
-        }
-
-        closeModal('identity-modal-overlay');
-        if (onSuccess) onSuccess();
-      } catch (err) {
-        alert(err.message || 'Failed to save identity.');
-      } finally {
-        submitBtn.disabled = false;
+    if (nameVal.length === 0) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', 'Enter an identity name.');
+      } else {
+        clearFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name');
       }
-    });
-  }
+      return false;
+    }
+    if (nameVal.length < 2) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', 'Name must be at least 2 characters.');
+      }
+      return false;
+    }
+    if (nameVal.length > 50) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', 'Name must be 50 characters or fewer.');
+      }
+      return false;
+    }
+    if (nameVal.startsWith('_') || nameVal.startsWith('.')) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', "Name can't start with _ or .");
+      }
+      return false;
+    }
+    if (!/[a-zA-Z0-9]/.test(nameVal)) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', 'Name must contain at least one letter or number.');
+      }
+      return false;
+    }
+
+    // Duplication Check (avoiding duplicate names per user)
+    const isDuplicate = STATE_IDENTITIES.some(
+      (i) => i.name.trim().toLowerCase() === nameVal.toLowerCase() && getItemId(i) !== editId
+    );
+    if (isDuplicate) {
+      if (showError) {
+        setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', 'An identity with this name already exists.');
+      }
+      return false;
+    }
+
+    setFieldState(nameInput, 'error-identity-name', 'error-identity-name-text', 'icon-identity-name', null);
+    return true;
+  };
+
+  const updateState = () => {
+    if (submitBtn) {
+      submitBtn.disabled = !checkValidation(false);
+    }
+  };
+
+  updateState();
+
+  nameInput.oninput = () => {
+    const hasErrorDisplayed = nameInput.classList.contains('error');
+    checkValidation(hasErrorDisplayed);
+    updateState();
+  };
+  nameInput.onblur = () => {
+    checkValidation(true);
+    updateState();
+  };
+
+  descInput.oninput = () => {
+    updateDescCharCount(descInput.value.length);
+  };
+
+  freshForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!checkValidation(true)) {
+      updateState();
+      return;
+    }
+
+    const name = nameInput.value.trim();
+    const description = descInput.value.trim();
+    const color = overlay.querySelector('input[name="identity-color"]:checked')?.value || 'moss';
+
+    submitBtn.disabled = true;
+
+    try {
+      if (editId) {
+        const res = await apiRequest(`/api/identity/${editId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name, description, color })
+        });
+        const updated = res?.identity || res?.data || res;
+        const idx = STATE_IDENTITIES.findIndex(i => getItemId(i) === editId);
+        if (idx !== -1) STATE_IDENTITIES[idx] = updated;
+      } else {
+        const res = await apiRequest('/api/identity', {
+          method: 'POST',
+          body: JSON.stringify({ name, description, color })
+        });
+        const created = res?.identity || res?.data || res;
+        STATE_IDENTITIES.push(created);
+      }
+
+      closeModal('identity-modal-overlay');
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      alert(err.message || 'Failed to save identity.');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
 
   openModal('identity-modal-overlay', triggerEl);
 }

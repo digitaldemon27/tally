@@ -75,7 +75,7 @@ async function initIdentityPage() {
           try {
             await apiRequest('/api/identity', {
               method: 'DELETE',
-              body: JSON.stringify({ ids: [identityId] })
+              body: JSON.stringify({ identityIds: [identityId] })
             });
             window.location.href = 'dashboard.html';
           } catch (err) {
@@ -130,7 +130,7 @@ async function initIdentityPage() {
       try {
         await apiRequest('/api/habits', {
           method: 'DELETE',
-          body: JSON.stringify({ ids })
+          body: JSON.stringify({ habitIds: ids })
         });
         STATE_HABITS = STATE_HABITS.filter(h => !ids.includes(getItemId(h)));
         renderHabits();
@@ -143,9 +143,9 @@ async function initIdentityPage() {
   const openBtn = document.getElementById('open-habit-modal-btn');
   const openBtnEmpty = document.getElementById('open-habit-modal-empty-btn');
 
-  wireHabitModalLive(openBtn, identityId, () => loadHabits(identityId));
+  wireHabitModalLive(openBtn, identityId, () => renderHabits());
   if (openBtnEmpty) {
-    openBtnEmpty.addEventListener('click', () => openHabitModalForLive('create', null, identityId, openBtnEmpty, () => loadHabits(identityId)));
+    openBtnEmpty.addEventListener('click', () => openHabitModalForLive('create', null, identityId, openBtnEmpty, () => renderHabits()));
   }
 
   // Live Buddy section
@@ -156,21 +156,27 @@ async function initIdentityPage() {
 
 async function loadHabits(identityId) {
   try {
-    const res = await apiRequest(`/api/identity/${identityId}/habits`, { method: 'GET' });
-    STATE_HABITS = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+    const [activeRes, archivedRes] = await Promise.all([
+      apiRequest(`/api/identity/${identityId}/habits`, { method: 'GET' }),
+      apiRequest(`/api/identity/${identityId}/habits?archived=true`, { method: 'GET' })
+    ]);
+    const activeList = Array.isArray(activeRes) ? activeRes : (Array.isArray(activeRes?.data) ? activeRes.data : []);
+    const archivedList = Array.isArray(archivedRes) ? archivedRes : (Array.isArray(archivedRes?.data) ? archivedRes.data : []);
+    STATE_HABITS = [...activeList, ...archivedList];
   } catch (err) {
     console.error('Failed to load habits:', err);
     STATE_HABITS = [];
   }
 
-  // Pre-fetch vote summaries for each habit
-  for (const habit of STATE_HABITS) {
+  // Pre-fetch vote summaries in parallel
+  const promises = STATE_HABITS.map(async (habit) => {
     const hId = getItemId(habit);
     try {
       const summary = await apiRequest(`/api/votes/summary?habitId=${hId}`, { method: 'GET' });
       if (summary) STATE_VOTE_SUMMARIES[hId] = summary;
     } catch (_) {}
-  }
+  });
+  await Promise.all(promises);
 
   renderHabits();
 }
@@ -210,14 +216,16 @@ function renderHabits() {
 
   habitList.innerHTML = '';
 
-  if (STATE_HABITS.length === 0) {
+  const visibleHabits = SHOW_ARCHIVED ? STATE_HABITS : STATE_HABITS.filter(h => !h.isArchived);
+
+  if (visibleHabits.length === 0) {
     if (emptyState) emptyState.style.display = 'block';
     return;
   }
   if (emptyState) emptyState.style.display = 'none';
 
   const identityId = getItemId(STATE_IDENTITY_DETAIL);
-  STATE_HABITS.forEach(habit => {
+  visibleHabits.forEach(habit => {
     const row = buildHabitRowLive(habit, identityId, renderHabits);
     habitList.appendChild(row);
   });
@@ -226,10 +234,11 @@ function renderHabits() {
 
 function buildHabitRowLive(habit, identityId, onUpdate) {
   const hId = getItemId(habit);
-  const summary = STATE_VOTE_SUMMARIES[hId] || { totalVotes: 0, rollingConsistency: 0, missedYesterday: false };
+  const summary = STATE_VOTE_SUMMARIES[hId] || { totalVotes: 0, rollingConsistency: 0, weeklyConsistency: 0, missedYesterday: false };
 
   const totalVotes = summary.totalVotes || 0;
   const consistency = summary.rollingConsistency || 0;
+  const weeklyConsistency = summary.weeklyConsistency || 0;
   const missedYesterday = summary.missedYesterday || false;
   const activeBuddy = getActiveBuddy(identityId);
 
@@ -240,7 +249,7 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
   }
 
   const row = document.createElement('div');
-  row.className = 'habit-row';
+  row.className = 'habit-row' + (habit.isArchived ? ' habit-row--archived' : '');
   row.setAttribute('role', 'listitem');
   row.dataset.habitId = hId;
 
@@ -254,10 +263,6 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
 
     <div class="habit-row__content">
       <p class="habit-row__name">${escapeHtml(habit.name)}</p>
-      <div class="habit-row__meta">
-        <span class="freq-badge">${escapeHtml(FREQ_LABELS[habit.frequency] || habit.frequency)}</span>
-        <span class="tracking-badge">${escapeHtml(TRACKING_LABELS[habit.trackingType] || habit.trackingType)}</span>
-      </div>
       ${nmtHtml}
     </div>
 
@@ -265,6 +270,11 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
       <div class="habit-stat">
         <span class="habit-stat__value">${totalVotes}</span>
         <span class="habit-stat__label">votes</span>
+      </div>
+      <div class="habit-stats__divider"></div>
+      <div class="habit-stat">
+        <span class="habit-stat__value habit-stat__value--consistency">${weeklyConsistency}%</span>
+        <span class="habit-stat__label">7-day</span>
       </div>
       <div class="habit-stats__divider"></div>
       <div class="habit-stat">
@@ -296,6 +306,8 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
       </button>
       <ul class="overflow-menu__dropdown" role="menu" aria-label="${escapeHtml(habit.name)} options">
         <li><button class="overflow-menu__item" role="menuitem" data-action="edit">Edit</button></li>
+        <li><button class="overflow-menu__item" role="menuitem" data-action="archive">${habit.isArchived ? 'Unarchive' : 'Archive'}</button></li>
+        <li><button class="overflow-menu__item" role="menuitem" data-action="select">Select</button></li>
         <li><button class="overflow-menu__item overflow-menu__item--danger" role="menuitem" data-action="delete">Delete</button></li>
       </ul>
     </div>
@@ -314,6 +326,34 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
     openHabitModalForLive('edit', habit, identityId, trigger, onUpdate);
   });
 
+  row.querySelector('[data-action="archive"]').addEventListener('click', async () => {
+    closeAllOverflowMenus();
+    try {
+      const updatedStatus = !habit.isArchived;
+      await apiRequest(`/api/habits/${hId}/archive`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isArchived: updatedStatus })
+      });
+      habit.isArchived = updatedStatus;
+      renderHabits();
+    } catch (err) {
+      alert(err.message || 'Failed to update habit archive status.');
+    }
+  });
+
+  row.querySelector('[data-action="select"]').addEventListener('click', () => {
+    closeAllOverflowMenus();
+    const container = document.getElementById('habit-list');
+    if (container) {
+      container.classList.add('selection-mode');
+      const cb = row.querySelector('.js-habit-select');
+      if (cb) {
+        cb.checked = true;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+  });
+
   row.querySelector('[data-action="delete"]').addEventListener('click', () => {
     closeAllOverflowMenus();
     openConfirmDelete({
@@ -324,7 +364,7 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
         try {
           await apiRequest('/api/habits', {
             method: 'DELETE',
-            body: JSON.stringify({ ids: [hId] })
+            body: JSON.stringify({ habitIds: [hId] })
           });
           STATE_HABITS = STATE_HABITS.filter(h => getItemId(h) !== hId);
           delete STATE_VOTE_SUMMARIES[hId];
@@ -395,76 +435,137 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
   const overlay = document.getElementById('habit-modal-overlay');
   if (!overlay) return;
 
+  const form = document.getElementById('habit-form');
+  if (!form) return;
+
+  // Clone form to strip old event listeners
+  const freshForm = form.cloneNode(true);
+  form.parentNode.replaceChild(freshForm, form);
+
   const titleEl = document.getElementById('habit-modal-title');
   const submitBtn = document.getElementById('habit-submit-btn');
-  const nameInput = document.getElementById('input-habit-name');
-  const editIdInput = document.getElementById('habit-edit-id');
-  const form = document.getElementById('habit-form');
+  const nameInput = freshForm.querySelector('#input-habit-name');
+  const editIdInput = freshForm.querySelector('#habit-edit-id');
+
+  if (!nameInput || !submitBtn || !editIdInput) return;
+
+  // Reset form and validation errors
+  nameInput.value = '';
+  clearFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name');
+
+  const editId = mode === 'edit' && habit ? getItemId(habit) : '';
 
   if (mode === 'edit' && habit) {
-    const hId = getItemId(habit);
     if (titleEl) titleEl.textContent = 'Edit Habit';
     if (submitBtn) submitBtn.textContent = 'Save Changes';
     if (nameInput) nameInput.value = habit.name || '';
-    if (editIdInput) editIdInput.value = hId;
-
-    const freqRadio = overlay.querySelector(`input[name="habit-frequency"][value="${habit.frequency || 'daily'}"]`);
-    if (freqRadio) freqRadio.checked = true;
-
-    const trackRadio = overlay.querySelector(`input[name="habit-tracking"][value="${habit.trackingType || 'boolean'}"]`);
-    if (trackRadio) trackRadio.checked = true;
+    if (editIdInput) editIdInput.value = editId;
   } else {
     if (titleEl) titleEl.textContent = 'New Habit';
     if (submitBtn) submitBtn.textContent = 'Create Habit';
-    if (form) form.reset();
     if (editIdInput) editIdInput.value = '';
-
-    const defaultFreq = overlay.querySelector('input[name="habit-frequency"][value="daily"]');
-    if (defaultFreq) defaultFreq.checked = true;
-
-    const defaultTrack = overlay.querySelector('input[name="habit-tracking"][value="boolean"]');
-    if (defaultTrack) defaultTrack.checked = true;
   }
+
+  const checkValidation = (showError = false) => {
+    const nameVal = nameInput.value.trim();
+
+    if (nameVal.length === 0) {
+      if (showError) {
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Enter a habit name.');
+      } else {
+        clearFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name');
+      }
+      return false;
+    }
+    if (nameVal.length < 2) {
+      if (showError) {
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be at least 2 characters.');
+      }
+      return false;
+    }
+    if (nameVal.length > 50) {
+      if (showError) {
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be 50 characters or fewer.');
+      }
+      return false;
+    }
+    if (nameVal.startsWith('_') || nameVal.startsWith('.')) {
+      if (showError) {
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', "Name can't start with _ or .");
+      }
+      return false;
+    }
+    if (!/[a-zA-Z0-9]/.test(nameVal)) {
+      if (showError) {
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must contain at least one letter or number.');
+      }
+      return false;
+    }
+
+    setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', null);
+    return true;
+  };
+
+  const updateHabitSubmitState = () => {
+    if (submitBtn) {
+      submitBtn.disabled = !checkValidation(false);
+    }
+  };
+
+  updateHabitSubmitState();
+
+  nameInput.oninput = () => {
+    const hasErrorDisplayed = nameInput.classList.contains('error');
+    checkValidation(hasErrorDisplayed);
+    updateHabitSubmitState();
+  };
+  nameInput.onblur = () => {
+    checkValidation(true);
+    updateHabitSubmitState();
+  };
 
   const closeBtn = document.getElementById('habit-modal-close-btn');
   if (closeBtn) closeBtn.onclick = () => closeModal('habit-modal-overlay');
 
-  if (form && !form._wiredLive) {
-    form._wiredLive = true;
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const frequency = overlay.querySelector('input[name="habit-frequency"]:checked')?.value || 'daily';
-      const trackingType = overlay.querySelector('input[name="habit-tracking"]:checked')?.value || 'boolean';
-      const editId = editIdInput ? editIdInput.value : '';
+  freshForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!checkValidation(true)) {
+      updateHabitSubmitState();
+      return;
+    }
 
-      submitBtn.disabled = true;
+    const name = nameInput.value.trim();
+    const editId = editIdInput.value;
 
-      try {
-        if (editId) {
-          const updated = await apiRequest(`/api/habits/${editId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ name, frequency, trackingType })
-          });
-          const idx = STATE_HABITS.findIndex(h => getItemId(h) === editId);
-          if (idx !== -1) STATE_HABITS[idx] = updated.data || updated;
-        } else {
-          const created = await apiRequest(`/api/identity/${identityId}/habits`, {
-            method: 'POST',
-            body: JSON.stringify({ name, frequency, trackingType })
-          });
-          STATE_HABITS.push(created.data || created);
-        }
+    submitBtn.disabled = true;
 
-        closeModal('habit-modal-overlay');
-        if (onSuccess) onSuccess();
-      } catch (err) {
-        alert(err.message || 'Failed to save habit.');
-      } finally {
-        submitBtn.disabled = false;
+    try {
+      if (editId) {
+        const updated = await apiRequest(`/api/habits/${editId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name })
+        });
+        const updatedObj = updated.data || updated;
+        const idx = STATE_HABITS.findIndex(h => getItemId(h) === editId);
+        if (idx !== -1) STATE_HABITS[idx] = updatedObj;
+      } else {
+        const created = await apiRequest(`/api/identity/${identityId}/habits`, {
+          method: 'POST',
+          body: JSON.stringify({ name })
+        });
+        const newHabitObj = created.data || created;
+        STATE_HABITS.push(newHabitObj);
       }
-    });
-  }
+
+      closeModal('habit-modal-overlay');
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      alert(err.message || 'Failed to save habit.');
+    } finally {
+      submitBtn.disabled = false;
+      updateHabitSubmitState();
+    }
+  });
 
   openModal('habit-modal-overlay', triggerEl);
 }
@@ -490,10 +591,15 @@ function openIdentityEditFromDetailLive(identity, triggerEl) {
         <h2 class="form-title" id="identity-edit-inline-title">Edit Identity</h2>
         <p class="form-subtitle">Update the name, description, or color.</p>
         <form id="iei-form" novalidate autocomplete="off">
-          <div class="field-group">
+          <div class="field-group" id="iei-name-group">
             <label class="field-label" for="iei-name">Name <span class="field-required" aria-hidden="true">*</span></label>
             <div class="field-input-wrap">
-              <input class="field-input" type="text" id="iei-name" maxlength="40" aria-required="true" />
+              <input class="field-input" type="text" id="iei-name" maxlength="50" aria-required="true" />
+              <span class="field-status-icon" id="iei-icon-name" aria-hidden="true"></span>
+            </div>
+            <div class="field-error" id="error-iei-name" role="alert" aria-live="polite">
+              <span class="field-error__icon" aria-hidden="true">⚠️</span>
+              <span class="field-error__text" id="error-iei-name-text"></span>
             </div>
           </div>
           <div class="field-group">
@@ -522,45 +628,120 @@ function openIdentityEditFromDetailLive(identity, triggerEl) {
     document.body.appendChild(overlay);
   }
 
-  overlay.querySelector('#iei-name').value = identity.name;
-  const desc = overlay.querySelector('#iei-desc');
-  desc.value = identity.description || '';
-  const charCount = overlay.querySelector('#iei-char-count');
-  if (charCount) charCount.textContent = `${desc.value.length} / 120`;
-  const colorRadio = overlay.querySelector(`input[name="iei-color"][value="${identity.color || 'moss'}"]`);
-  if (colorRadio) colorRadio.checked = true;
-
-  overlay.querySelector('#iei-close').onclick = () => closeModal('identity-edit-inline-overlay');
-  desc.oninput = () => { if (charCount) charCount.textContent = `${desc.value.length} / 120`; };
-
   const form = overlay.querySelector('#iei-form');
   const freshForm = form.cloneNode(true);
   form.parentNode.replaceChild(freshForm, form);
 
-  freshForm.querySelector('#iei-desc').oninput = () => {
-    const cnt = freshForm.querySelector('#iei-char-count');
-    if (cnt) cnt.textContent = `${freshForm.querySelector('#iei-desc').value.length} / 120`;
-  };
+  const nameInput = freshForm.querySelector('#iei-name');
+  const descInput = freshForm.querySelector('#iei-desc');
+  const charCount = freshForm.querySelector('#iei-char-count');
+  const submitBtn = freshForm.querySelector('#iei-submit');
+
+  if (!nameInput || !descInput || !submitBtn) return;
+
+  nameInput.value = identity.name;
+  descInput.value = identity.description || '';
+  if (charCount) charCount.textContent = `${descInput.value.length} / 120`;
+  const colorRadio = overlay.querySelector(`input[name="iei-color"][value="${identity.color || 'moss'}"]`);
+  if (colorRadio) colorRadio.checked = true;
+
+  // Clear previous validation state
+  clearFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name');
+
   freshForm.querySelector('#iei-close') && (freshForm.querySelector('#iei-close').onclick = () => closeModal('identity-edit-inline-overlay'));
+
+  const checkValidation = (showError = false) => {
+    const nameVal = nameInput.value.trim();
+
+    if (nameVal.length === 0) {
+      if (showError) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', 'Enter an identity name.');
+      } else {
+        clearFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name');
+      }
+      return false;
+    }
+    if (nameVal.length < 2) {
+      if (showError) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', 'Name must be at least 2 characters.');
+      }
+      return false;
+    }
+    if (nameVal.length > 50) {
+      if (showError) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', 'Name must be 50 characters or fewer.');
+      }
+      return false;
+    }
+    if (nameVal.startsWith('_') || nameVal.startsWith('.')) {
+      if (showError) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', "Name can't start with _ or .");
+      }
+      return false;
+    }
+    if (!/[a-zA-Z0-9]/.test(nameVal)) {
+      if (showError) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', 'Name must contain at least one letter or number.');
+      }
+      return false;
+    }
+
+    setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', null);
+    return true;
+  };
+
+  const updateState = () => {
+    if (submitBtn) {
+      submitBtn.disabled = !checkValidation(false);
+    }
+  };
+
+  updateState();
+
+  nameInput.oninput = () => {
+    const hasErrorDisplayed = nameInput.classList.contains('error');
+    checkValidation(hasErrorDisplayed);
+    updateState();
+  };
+  nameInput.onblur = () => {
+    checkValidation(true);
+    updateState();
+  };
+
+  descInput.oninput = () => {
+    if (charCount) charCount.textContent = `${descInput.value.length} / 120`;
+  };
 
   freshForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = freshForm.querySelector('#iei-name').value.trim();
-    if (!name) return;
+    if (!checkValidation(true)) {
+      updateState();
+      return;
+    }
 
-    const description = freshForm.querySelector('#iei-desc').value.trim() || null;
+    const name = nameInput.value.trim();
+    const description = descInput.value.trim() || null;
     const color = freshForm.querySelector('input[name="iei-color"]:checked')?.value || identity.color;
+
+    submitBtn.disabled = true;
 
     try {
       const res = await apiRequest(`/api/identity/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name, description, color })
       });
-      STATE_IDENTITY_DETAIL = res.data || res;
+      STATE_IDENTITY_DETAIL = res.identity || res.data || res;
       renderIdentityHeaderLive();
       closeModal('identity-edit-inline-overlay');
     } catch (err) {
-      alert(err.message || 'Failed to update identity.');
+      if (err.message.includes('exists') || err.message.includes('409') || err.message.includes('duplicate')) {
+        setFieldState(nameInput, 'error-iei-name', 'error-iei-name-text', 'iei-icon-name', 'An identity with this name already exists.');
+      } else {
+        alert(err.message || 'Failed to update identity.');
+      }
+    } finally {
+      submitBtn.disabled = false;
+      updateState();
     }
   });
 
