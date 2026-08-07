@@ -5,7 +5,7 @@ import { computeMissedYesterday } from "../controller/VoteControllers/nmtStatusC
 
 // core vote summary logic extracted from the getVoteSummary controller so the Buddy System can call it
 // for a different user (the identity owner) without duplicating this code in two places
-export const getVoteSummaryForHabit = async (habitId, userId) => {
+export const getVoteSummaryForHabit = async (habitId, userId, todayForUser = null) => {
     // Compute date windows server-side, normalized to midnight UTC
     // 29 days back gives a 30-day inclusive window (today + 29 previous days)
     const thirtyDaysAgo = new Date();
@@ -49,9 +49,13 @@ export const getVoteSummaryForHabit = async (habitId, userId) => {
     const monthlyCount = result[0].last30Days[0]?.count ?? 0;
     const totalVotes = result[0].allTime[0]?.count ?? 0;
 
-    // using server-UTC today for NMT — timezone-aware follow-up is deferred (see getVoteSummaryController TODO)
-    const serverToday = new Date();
-    serverToday.setUTCHours(0, 0, 0, 0);
+    // using server-UTC today or todayForUser for votedToday & NMT
+    const serverToday = todayForUser || new Date();
+    if (!todayForUser) serverToday.setUTCHours(0, 0, 0, 0);
+
+    // Check if voted today
+    const todayLog = await HabitLog.findOne({ userId, habitId, date: serverToday });
+    const votedToday = !!todayLog;
 
     const createdDate = new Date(habit.createdAt);
     createdDate.setUTCHours(0, 0, 0, 0);
@@ -75,5 +79,5 @@ export const getVoteSummaryForHabit = async (habitId, userId) => {
     const activeDays7 = Math.min(7, daysBetween + 1);
     const weeklyConsistency = Math.round((weeklyCount / activeDays7) * 100);
 
-    return { weeklyCount, monthlyCount, totalVotes, missedYesterday, rollingConsistency, weeklyConsistency };
+    return { weeklyCount, monthlyCount, totalVotes, missedYesterday, rollingConsistency, weeklyConsistency, votedToday };
 };

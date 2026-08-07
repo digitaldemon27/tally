@@ -56,8 +56,8 @@ function initLoginForm() {
     }
 
     if (trimmed.includes('@')) {
-      const gmailRegex = /^(?=.{6,30}@gmail\.com$)(?!\.)(?!.*\.\.)(?!.*\.@)[A-Za-z0-9.]+@gmail\.com$/;
-      if (!gmailRegex.test(trimmed)) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(trimmed)) {
         if (showError) {
           setFieldState(emailInput, 'error-email', 'error-email-text', 'icon-email', 'Please enter a valid email address.');
         }

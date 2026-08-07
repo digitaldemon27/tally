@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { clusterConnection } from "../config/dbConfig.js";
-import { usernameRegex, gmailRegex } from "../validators/signupValidator.js";
+import { usernameRegex, emailRegex } from "../validators/signupValidator.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -20,20 +20,11 @@ const userSchema = new mongoose.Schema({
     required: [true, "Email is required"],
     trim: true,
     lowercase: true,
-    set: function (v) {
-      if (typeof v !== "string") return v;
-      let emailVal = v.trim().toLowerCase();
-      // If there is no '@' (no extension/domain), add '@gmail.com' by default
-      if (!emailVal.includes("@")) {
-        emailVal = `${emailVal}@gmail.com`;
-      }
-      return emailVal;
-    },
     validate: {
       validator: function (v) {
-        return typeof v === "string" && gmailRegex.test(v);
+        return typeof v === "string" && emailRegex.test(v);
       },
-      message: "Please enter a valid Gmail address (6-30 characters, no consecutive periods, cannot start or end with a period)."
+      message: "Please enter a valid email address."
     }
   },
   is_email_verified: {

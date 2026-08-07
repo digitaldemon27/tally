@@ -40,8 +40,8 @@ function initSignupForm() {
     const usernameVal = usernameInput.value.trim();
     const emailVal = emailInput.value.trim();
     const usernameRegex = /^(?=.{3,30}$)[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
-    const gmailRegex = /^(?=.{6,30}@gmail\.com$)(?!\.)(?!.*\.\.)(?!.*\.@)[A-Za-z0-9.]+@gmail\.com$/;
-    return usernameRegex.test(usernameVal) && gmailRegex.test(emailVal);
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return usernameRegex.test(usernameVal) && emailRegex.test(emailVal);
   }
 
   function updateSubmitButtonState() {

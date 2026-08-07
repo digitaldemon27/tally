@@ -10,6 +10,7 @@ import { deleteBulkHabits } from "../controller/HabitControllers/deleteHabitCont
 import { archiveHabitToggle, archiveBulkHabits } from "../controller/HabitControllers/archiveHabitController.js";
 import { updateHabit } from "../controller/HabitControllers/updateHabitController.js";
 import { getHabitsByIdentity } from "../controller/HabitControllers/getHabitsByIdentityController.js";
+import { getHabitHistory } from "../controller/HabitControllers/getHabitHistoryController.js";
 const router = express.Router({ mergeParams: true });
 
 router.post("/", authenticateJWT, validate(habitNameSchema), createHabitController);
@@ -20,6 +21,7 @@ router.get("/", authenticateJWT, (req, res, next) => {
   return getAllUserHabits(req, res, next);
 });
 router.patch("/archive", authenticateJWT, archiveBulkHabits);
+router.get("/:id/history", authenticateJWT, validateObjectId, getHabitHistory);
 router.get("/:id", authenticateJWT, validateObjectId, getHabitById);
 router.patch("/:id", authenticateJWT, validateObjectId, updateHabit);
 router.patch("/:id/archive", authenticateJWT, validateObjectId, archiveHabitToggle);

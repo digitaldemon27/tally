@@ -869,6 +869,41 @@
   display: block;
 }
 
+/* --- Undo Vote Button in Modal --- */
+.btn-undo-vote {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1.5px solid #FCA5A5;
+  transition: all var(--duration-fast) var(--ease-out);
+  margin-top: var(--space-3);
+}
+
+.btn-undo-vote:hover {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  border-color: #F87171;
+}
+
+.btn-undo-vote:focus-visible {
+  outline: 2px solid #DC2626;
+  outline-offset: 2px;
+}
+
+.btn-undo-vote:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Backend error banner (inline, next to field) */
 .field-server-error {
   display: none;
@@ -1490,8 +1525,15 @@
   display: none !important;
 }
 
+/* Selection Mode overrides */
 .selection-mode .card-select-wrap {
   display: flex !important;
+}
+.selection-mode .overflow-menu {
+  display: none !important;
+}
+.selection-mode .entry-row {
+  cursor: pointer;
 }
 
 .identity-card.is-selected {
@@ -1580,11 +1622,20 @@
 /* ==========================================
    OVERFLOW MENU
    ========================================== */
+.habit-row:has(.overflow-menu.is-open),
+.habit-row.is-menu-open {
+  z-index: 100 !important;
+}
+
 .overflow-menu {
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  z-index: 2;
+  z-index: 10;
+}
+
+.overflow-menu.is-open {
+  z-index: 999;
 }
 
 .overflow-menu__trigger {
@@ -1628,13 +1679,14 @@
   transform: translateY(-4px);
   transition: opacity var(--duration-fast) var(--ease-out),
               transform var(--duration-fast) var(--ease-out);
-  z-index: 2;
+  z-index: 1000;
 }
 
 .overflow-menu.is-open .overflow-menu__dropdown {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+  z-index: 1000;
 }
 
 .overflow-menu__item {
@@ -2724,20 +2776,21 @@
 
 /* positive → moss (existing token) */
 .entry-label-badge--positive {
-  background: var(--moss-light);
-  color: var(--moss-mid);
+  background: var(--moss);
+  color: var(--white);
 }
 
 /* negative → error tokens (existing) */
 .entry-label-badge--negative {
-  background: var(--error-bg);
-  color: var(--error);
+  background: var(--error);
+  color: var(--white);
 }
 
 /* neutral → slate tokens (existing) */
 .entry-label-badge--neutral {
-  background: var(--stone-dark);
-  color: var(--slate);
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--border-light);
 }
 
 /* ==========================================

@@ -227,6 +227,9 @@ function initPasswordToggle(btnId, inputId, iconId) {
   const icon = document.getElementById(iconId);
   if (!btn || !input) return;
 
+  if (btn.dataset.toggleInitialized) return;
+  btn.dataset.toggleInitialized = 'true';
+
   const EYE_OPEN = `
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
     <circle cx="12" cy="12" r="3"/>
@@ -236,7 +239,9 @@ function initPasswordToggle(btnId, inputId, iconId) {
     <line x1="1" y1="1" x2="23" y2="23"/>
   `;
 
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     const isHidden = input.type === 'password';
     input.type = isHidden ? 'text' : 'password';
     btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
@@ -327,9 +332,9 @@ function validateEmail(input) {
     return false;
   }
 
-  const gmailRegex = /^(?=.{6,30}@gmail\.com$)(?!\.)(?!.*\.\.)(?!.*\.@)[A-Za-z0-9.]+@gmail\.com$/;
-  if (!gmailRegex.test(trimmed)) {
-    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Please enter a valid Gmail address.');
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    setFieldState(input, 'error-email', 'error-email-text', 'icon-email', 'Please enter a valid email address.');
     return false;
   }
 
@@ -824,6 +829,8 @@ function initOverflowMenus(root) {
       closeAllOverflowMenus();
       if (!isOpen) {
         menu.classList.add('is-open');
+        const parentRow = menu.closest('.habit-row');
+        if (parentRow) parentRow.classList.add('is-menu-open');
         trigger.setAttribute('aria-expanded', 'true');
         const first = dropdown.querySelector('[role="menuitem"]');
         if (first) first.focus();
@@ -846,6 +853,8 @@ function initOverflowMenus(root) {
 function closeAllOverflowMenus() {
   document.querySelectorAll('.overflow-menu.is-open').forEach(m => {
     m.classList.remove('is-open');
+    const parentRow = m.closest('.habit-row');
+    if (parentRow) parentRow.classList.remove('is-menu-open');
     const t = m.querySelector('.overflow-menu__trigger');
     if (t) t.setAttribute('aria-expanded', 'false');
   });
@@ -2175,23 +2184,23 @@ function validateHabitName(input) {
   const raw = input ? input.value : '';
   const trimmed = raw.trim();
   if (raw.length === 0) {
-    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Enter a habit name.');
+    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name is required.');
     return false;
   }
   if (trimmed.length < 2) {
-    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be at least 2 characters.');
+    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must be at least 2 characters long.');
     return false;
   }
   if (trimmed.length > 50) {
-    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be 50 characters or fewer.');
+    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must be at most 50 characters long.');
     return false;
   }
   if (trimmed.startsWith('_') || trimmed.startsWith('.')) {
-    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', "Name can't start with _ or .");
+    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name cannot start with an underscore (_) or a period (.).');
     return false;
   }
   if (!/[a-zA-Z0-9]/.test(trimmed)) {
-    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must contain at least one letter or number.');
+    setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must contain at least one letter or number.');
     return false;
   }
   setFieldState(input, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', null);

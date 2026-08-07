@@ -1,44 +1,42 @@
-import { resend, FROM_EMAIL } from '../config/mail.config.js';
+import brevoClient from '../../config/brevo.js';
+import { SENDER } from '../config/mail.config.js';
 import { getOnboardingTemplate } from '../templates/onboarding.template.js';
 import { getResetPasswordTemplate } from '../templates/resetPassword.template.js';
 import { getVerificationTemplate } from '../templates/verification.template.js';
 
 /**
  * Low-level generic send email utility.
- * Handles communication with the Resend client.
+ * Handles communication with the Brevo TransactionalEmails client.
  * 
  * @param {Object} options - Sending options
  * @param {string|string[]} options.to - Recipient email(s)
  * @param {string} options.subject - Email subject line
  * @param {string} options.html - Email HTML body
  * @param {string} [options.text] - Plain text fallback body
- * @returns {Promise<Object>} - Resend API response
+ * @returns {Promise<Object>} - Brevo API response
  */
 export async function sendEmail({ to, subject, html, text }) {
-  if (!resend) {
-    const errorMsg = '❌ Cannot send email: Resend client is not configured (missing API key).';
+  if (!process.env.BREVO_API_KEY) {
+    const errorMsg = '❌ Cannot send email: Brevo client is not configured (missing BREVO_API_KEY).';
     console.error(errorMsg);
     throw new Error(errorMsg);
   }
 
+  const recipients = Array.isArray(to) ? to.map(e => ({ email: e })) : [{ email: to }];
+
   try {
-    const data = await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
+    const data = await brevoClient.transactionalEmails.sendTransacEmail({
+      sender: SENDER,
+      to: recipients,
       subject,
-      html,
-      ...(text && { text }),
+      htmlContent: html,
+      ...(text && { textContent: text }),
     });
 
-    if (data.error) {
-      console.error(`❌ Resend API returned error sending to ${to}:`, data.error);
-      throw data.error;
-    }
-
-    console.log(`✅ Email sent successfully to ${to}. Message ID: ${data.data?.id}`);
-    return data.data;
+    console.log(`✅ Email sent successfully via Brevo to ${to}. Message ID: ${data.messageId}`);
+    return data;
   } catch (error) {
-    console.error(`❌ Failed to send email to ${to}:`, error);
+    console.error(`❌ Failed to send email via Brevo to ${to}:`, error.body || error.message || error);
     throw error;
   }
 }

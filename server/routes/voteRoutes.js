@@ -4,7 +4,7 @@ import { authenticateJWT } from "../Middleware/authenticate.js";
 import { validateObjectId } from "../Middleware/validateObjectId.js";
 import { castVoteSchema, editVoteSchema } from "../validators/vote.validator.js";
 import { castVote } from "../controller/VoteControllers/castVoteController.js";
-import { deleteVote } from "../controller/VoteControllers/deleteVoteController.js";
+import { deleteVote, deleteTodayVote } from "../controller/VoteControllers/deleteVoteController.js";
 import { editVote } from "../controller/VoteControllers/editVoteController.js";
 import { getVoteSummary } from "../controller/VoteControllers/getVoteSummaryController.js";
 import { requireTimezone } from "../Middleware/requireTimezone.js";
@@ -15,8 +15,10 @@ const router = express.Router();
 router.post("/", authenticateJWT, requireTimezone, validate(castVoteSchema), castVote);
 
 // GET /votes/summary - Weekly and Monthly Vote Summary (must be defined before /:id to avoid Express matching "summary" as an id param)
-// TODO: summary still uses server-UTC date ranges (last 7 / last 30 days) — making rolling windows timezone-aware is a separate, harder problem deferred to a follow-up pass.
-router.get("/summary", authenticateJWT, getVoteSummary);
+router.get("/summary", authenticateJWT, requireTimezone, getVoteSummary);
+
+// DELETE /votes/today - Remove today's vote for a habit (reversible process)
+router.delete("/today", authenticateJWT, requireTimezone, deleteTodayVote);
 
 // DELETE /votes/:id - Delete Vote
 router.delete("/:id", authenticateJWT, requireTimezone, validateObjectId, deleteVote);

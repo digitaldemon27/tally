@@ -1,0 +1,401 @@
+/* =============================================================
+   history.css — Habit History & Consistency Visualization
+   Vote Graph panel that slides in from the right.
+   Uses only tokens from tokens.css — no magic numbers.
+   ============================================================= */
+
+/* ── Slide-in panel overlay ─────────────────────────────────── */
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 10);
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.history-overlay.is-open {
+  pointer-events: all;
+  visibility: visible;
+}
+
+.history-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.45);
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.history-overlay.is-open .history-overlay__backdrop {
+  opacity: 1;
+}
+
+.history-panel {
+  position: relative;
+  width: min(680px, 100vw);
+  height: 100dvh;
+  background: var(--stone);
+  box-shadow: -8px 0 40px rgba(28, 25, 23, 0.18);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--duration-slow) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+}
+
+.history-overlay.is-open .history-panel {
+  transform: translateX(0);
+}
+
+/* ── Panel header ────────────────────────────────────────────── */
+.history-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--stone);
+  border-bottom: 1px solid var(--border-light);
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.history-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--slate);
+  flex-shrink: 0;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.history-close-btn:hover { background: var(--stone-dark); color: var(--ink); }
+
+.history-header__title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Trend pill */
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.trend-pill--excellent  { background: #d1fae5; color: #065f46; }
+.trend-pill--strong     { background: #d1fae5; color: #065f46; }
+.trend-pill--improving  { background: #dbeafe; color: #1e40af; }
+.trend-pill--stable     { background: #e0e7ff; color: #3730a3; }
+.trend-pill--building   { background: #f1f5f9; color: #475569; }
+.trend-pill--starting   { background: #f1f5f9; color: #475569; }
+.trend-pill--recovering { background: #ede9fe; color: #5b21b6; }
+.trend-pill--declining  { background: #fef3c7; color: #92400e; }
+.trend-pill--rebuilding { background: #fef3c7; color: #92400e; }
+
+/* ── Panel body ──────────────────────────────────────────────── */
+.history-body {
+  flex: 1;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── NMT alert ───────────────────────────────────────────────── */
+.history-nmt-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.history-nmt-alert__icon { font-size: 1.25rem; flex-shrink: 0; margin-top: 1px; }
+.history-nmt-alert__text { font-size: 0.875rem; color: #78350f; line-height: 1.5; }
+
+/* ── Summary cards row ───────────────────────────────────────── */
+.history-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+@media (max-width: 520px) {
+  .history-summary-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+.history-stat-card {
+  background: var(--stone-dark);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  position: relative;
+  overflow: hidden;
+}
+.history-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--moss);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s var(--ease-out);
+}
+.history-stat-card.is-loaded::before { transform: scaleX(1); }
+
+.history-stat-card--today::before { background: var(--moss); }
+.history-stat-card--votes::before { background: var(--accent-blue); }
+.history-stat-card--consist::before { background: var(--accent-teal); }
+.history-stat-card--window::before { background: var(--accent-plum); }
+
+.hsc__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hsc__label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--slate-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.hsc__sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── Vote graph section ──────────────────────────────────────── */
+.history-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--slate-light);
+  margin-bottom: var(--space-3);
+}
+
+.vg-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-2);
+}
+
+/* Day-of-week header row */
+.vg-day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  min-width: 280px;
+}
+.vg-day-header {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--slate-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Month label row (rendered above the grid, one label per week column) */
+.vg-month-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  margin-bottom: var(--space-2);
+  min-width: 280px;
+}
+.vg-month-label {
+  font-size: 0.625rem;
+  color: var(--slate-light);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The grid itself: 7 columns (days), 12 rows (weeks) */
+.vg-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  min-width: 280px;
+}
+
+/* Individual cells */
+.vg-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  cursor: default;
+  position: relative;
+  transition: transform var(--duration-fast), box-shadow var(--duration-fast);
+  opacity: 0;
+  animation: cellAppear 0.3s var(--ease-out) forwards;
+}
+
+@keyframes cellAppear {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.vg-cell:hover { transform: scale(1.25); z-index: 2; }
+
+/* Status colors */
+.vg-cell--completed     { background: var(--moss);       }
+.vg-cell--missed        { background: var(--dust-light);  }
+.vg-cell--today-voted   { background: var(--moss); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--moss); }
+.vg-cell--today-open    { background: var(--stone-dark); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--slate); animation: todayPulse 2s ease-in-out infinite, cellAppear 0.3s var(--ease-out) forwards; }
+.vg-cell--future        { background: transparent; border: 1px solid var(--border-light); }
+.vg-cell--pre-creation  { background: var(--stone-dark); opacity: 0.4; border: 1px dashed var(--dust-light); }
+
+@keyframes todayPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--slate-light); }
+  50%       { box-shadow: 0 0 0 2px var(--stone), 0 0 0 6px var(--slate); }
+}
+
+/* Tooltip for completed cells with notes */
+.vg-cell[data-note]::after {
+  content: attr(data-note);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--white);
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+  z-index: 10;
+}
+.vg-cell[data-note]:hover::after { opacity: 1; }
+
+/* Date tooltip (shown via JS on hover, for all cells) */
+.vg-tooltip {
+  position: fixed;
+  background: var(--graphite);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+  z-index: 999;
+  white-space: nowrap;
+}
+.vg-tooltip.is-visible { opacity: 1; }
+
+/* ── Weekday pattern bars ─────────────────────────────────────── */
+.vg-pattern-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.vg-pattern-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 2.5rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.vg-pattern-day {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--slate);
+  text-align: right;
+}
+
+.vg-pattern-bar-track {
+  background: var(--dust-light);
+  border-radius: var(--radius-full);
+  height: 8px;
+  overflow: hidden;
+}
+
+.vg-pattern-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--moss);
+  width: 0%;
+  transition: width 0.8s var(--ease-out);
+}
+
+.vg-pattern-bar-fill--low    { background: var(--dust); }
+.vg-pattern-bar-fill--mid    { background: var(--moss-mid); }
+.vg-pattern-bar-fill--high   { background: var(--moss); }
+
+.vg-pattern-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--slate-light);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Insight card ─────────────────────────────────────────────── */
+.history-insight {
+  background: var(--moss-light);
+  border: 1px solid var(--moss-tint);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: 0.875rem;
+  color: var(--moss-deep);
+  line-height: 1.55;
+}
+.history-insight strong { font-weight: 600; }
+
+/* ── Loading skeleton ─────────────────────────────────────────── */
+.history-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skel {
+  background: linear-gradient(90deg, var(--stone-dark) 25%, var(--dust-light) 50%, var(--stone-dark) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: var(--radius-sm);
+}
+.skel--row    { height: 80px; border-radius: var(--radius-md); }
+.skel--grid   { height: 160px; border-radius: var(--radius-md); }
+.skel--bars   { height: 120px; border-radius: var(--radius-md); }

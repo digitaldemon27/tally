@@ -13,9 +13,14 @@ export const getTodayController = async (req, res) => {
             .find({ userId, date: todayNormalized })
             .sort({ createdAt: 1 });
 
+        // Fetch the user's account creation date to restrict historical navigation in the UI
+        const User = (await import("../../schema/userSchema.js")).default;
+        const user = await User.findById(userId).select("createdAt");
+
         return res.status(200).json({
             success: true,
-            entries
+            entries,
+            accountCreatedAt: user ? user.createdAt : null
         });
     } catch (error) {
         console.error("error occurred while fetching today's scorecard entries:", error.message);

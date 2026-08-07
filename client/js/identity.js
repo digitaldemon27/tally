@@ -202,26 +202,22 @@ function renderIdentityHeaderLive() {
   const headingEl = document.getElementById('identity-detail-heading');
   const descEl = document.getElementById('identity-detail-description');
   const eyebrowEl = document.getElementById('identity-detail-eyebrow');
-  const votesEl = document.getElementById('identity-stat-votes');
   const consisEl = document.getElementById('identity-stat-consistency');
 
   if (headingEl) headingEl.textContent = STATE_IDENTITY_DETAIL.name;
   if (descEl) descEl.textContent = STATE_IDENTITY_DETAIL.description || '';
   if (eyebrowEl) eyebrowEl.textContent = 'Identity';
 
-  let totalVotes = 0;
   let consistencySum = 0;
   STATE_HABITS.forEach(h => {
     const hId = getItemId(h);
     const s = STATE_VOTE_SUMMARIES[hId];
     if (s) {
-      totalVotes += s.totalVotes || 0;
       consistencySum += s.rollingConsistency || 0;
     }
   });
   const avgConsistency = STATE_HABITS.length ? Math.round(consistencySum / STATE_HABITS.length) : 0;
 
-  if (votesEl) votesEl.textContent = totalVotes;
   if (consisEl) consisEl.textContent = `${avgConsistency}%`;
 }
 
@@ -322,6 +318,7 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
         </svg>
       </button>
       <ul class="overflow-menu__dropdown" role="menu" aria-label="${escapeHtml(habit.name)} options">
+        <li><button class="overflow-menu__item" role="menuitem" data-action="history">View History</button></li>
         <li><button class="overflow-menu__item" role="menuitem" data-action="edit">Edit</button></li>
         <li><button class="overflow-menu__item" role="menuitem" data-action="archive">${habit.isArchived ? 'Unarchive' : 'Archive'}</button></li>
         <li><button class="overflow-menu__item" role="menuitem" data-action="select">Select</button></li>
@@ -330,10 +327,17 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
     </div>
   `;
 
-  // Wire vote button
-  if (!votedToday) {
-    const voteBtn = row.querySelector('.vote-btn');
-    voteBtn.addEventListener('click', () => castVoteLive(hId, identityId, voteBtn, onUpdate));
+  // Wire vote button for reversible voting
+  const voteBtn = row.querySelector('.vote-btn');
+  if (voteBtn) {
+    voteBtn.addEventListener('click', () => {
+      const isVoted = voteBtn.classList.contains('voted');
+      if (isVoted) {
+        unvoteLive(hId, voteBtn, onUpdate);
+      } else {
+        castVoteLive(hId, identityId, voteBtn, onUpdate);
+      }
+    });
   }
 
   // Overflow menu actions
@@ -356,7 +360,25 @@ function buildHabitRowLive(habit, identityId, onUpdate) {
     }
   };
 
-  row.querySelector('[data-action="archive"]')?.addEventListener('click', enterSelectionMode);
+  row.querySelector('[data-action="history"]')?.addEventListener('click', () => {
+    closeAllOverflowMenus();
+    openHabitHistory(hId, habit.name);
+  });
+
+  row.querySelector('[data-action="archive"]')?.addEventListener('click', async () => {
+    closeAllOverflowMenus();
+    try {
+      const targetState = !habit.isArchived;
+      await apiRequest('/api/habits/archive', {
+        method: 'PATCH',
+        body: JSON.stringify({ habitIds: [hId], isArchived: targetState })
+      });
+      habit.isArchived = targetState;
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      alert(err.message || 'Failed to update habit archive status.');
+    }
+  });
   row.querySelector('[data-action="select"]')?.addEventListener('click', enterSelectionMode);
   row.querySelector('[data-action="delete"]')?.addEventListener('click', enterSelectionMode);
 
@@ -373,10 +395,11 @@ async function castVoteLive(habitId, identityId, voteBtn, onUpdate) {
       body: JSON.stringify({ identityId, habitId })
     });
 
+    voteBtn.disabled = false;
     voteBtn.classList.remove('vote-casting');
     voteBtn.classList.replace('not-voted', 'voted');
-    voteBtn.setAttribute('aria-label', 'Already voted today');
-    voteBtn.setAttribute('aria-disabled', 'true');
+    voteBtn.setAttribute('aria-label', 'Already voted today — click to undo');
+    voteBtn.title = 'Click to undo today\'s vote';
     voteBtn.querySelector('.vote-btn__icon').textContent = '✓';
     voteBtn.querySelector('.vote-btn__label').textContent = 'Voted';
 
@@ -394,9 +417,10 @@ async function castVoteLive(habitId, identityId, voteBtn, onUpdate) {
   } catch (err) {
     voteBtn.classList.remove('vote-casting');
     if (err.status === 409 || (err.message && err.message.toLowerCase().includes('already voted'))) {
+      voteBtn.disabled = false;
       voteBtn.classList.replace('not-voted', 'voted');
-      voteBtn.setAttribute('aria-label', 'Already voted today');
-      voteBtn.setAttribute('aria-disabled', 'true');
+      voteBtn.setAttribute('aria-label', 'Already voted today — click to undo');
+      voteBtn.title = 'Click to undo today\'s vote';
       voteBtn.querySelector('.vote-btn__icon').textContent = '✓';
       voteBtn.querySelector('.vote-btn__label').textContent = 'Voted';
       if (STATE_VOTE_SUMMARIES[habitId]) STATE_VOTE_SUMMARIES[habitId].votedToday = true;
@@ -405,6 +429,45 @@ async function castVoteLive(habitId, identityId, voteBtn, onUpdate) {
       voteBtn.disabled = false;
       alert(err.message || 'Failed to cast vote.');
     }
+  }
+}
+
+async function unvoteLive(habitId, voteBtn, onUpdate) {
+  if (voteBtn) voteBtn.disabled = true;
+  try {
+    await apiRequest(`/api/votes/today?habitId=${habitId}`, { method: 'DELETE' });
+
+    if (STATE_VOTE_SUMMARIES[habitId]) {
+      STATE_VOTE_SUMMARIES[habitId].votedToday = false;
+      if (STATE_VOTE_SUMMARIES[habitId].totalVotes > 0) {
+        STATE_VOTE_SUMMARIES[habitId].totalVotes--;
+      }
+    }
+
+    if (voteBtn) {
+      voteBtn.disabled = false;
+      voteBtn.classList.replace('voted', 'not-voted');
+      voteBtn.setAttribute('aria-label', 'Cast vote');
+      voteBtn.removeAttribute('title');
+      const icon = voteBtn.querySelector('.vote-btn__icon');
+      const label = voteBtn.querySelector('.vote-btn__label');
+      if (icon) icon.textContent = '🗳';
+      if (label) label.textContent = 'Cast vote';
+    }
+
+    // Refresh vote summary for this habit
+    try {
+      const summary = await apiRequest(`/api/votes/summary?habitId=${habitId}`, { method: 'GET' });
+      if (summary) {
+        summary.votedToday = false;
+        STATE_VOTE_SUMMARIES[habitId] = summary;
+      }
+    } catch (_) {}
+
+    if (onUpdate) onUpdate();
+  } catch (err) {
+    if (voteBtn) voteBtn.disabled = false;
+    alert(err.message || 'Failed to remove today\'s vote.');
   }
 }
 
@@ -438,6 +501,22 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
   clearFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name');
 
   const editId = mode === 'edit' && habit ? getItemId(habit) : '';
+  const undoVoteBtn = freshForm.querySelector('#habit-undo-vote-btn');
+  const isVoted = editId && STATE_VOTE_SUMMARIES[editId]?.votedToday;
+
+  if (undoVoteBtn) {
+    if (mode === 'edit' && isVoted) {
+      undoVoteBtn.style.display = 'flex';
+      undoVoteBtn.onclick = async () => {
+        undoVoteBtn.disabled = true;
+        await unvoteLive(editId, null, onSuccess);
+        closeModal('habit-modal-overlay');
+      };
+    } else {
+      undoVoteBtn.style.display = 'none';
+      undoVoteBtn.onclick = null;
+    }
+  }
 
   if (mode === 'edit' && habit) {
     if (titleEl) titleEl.textContent = 'Edit Habit';
@@ -450,12 +529,12 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
     if (editIdInput) editIdInput.value = '';
   }
 
-  const checkValidation = (showError = false) => {
+  const checkValidation = (showError = true) => {
     const nameVal = nameInput.value.trim();
 
     if (nameVal.length === 0) {
       if (showError) {
-        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Enter a habit name.');
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name is required.');
       } else {
         clearFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name');
       }
@@ -463,25 +542,25 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
     }
     if (nameVal.length < 2) {
       if (showError) {
-        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be at least 2 characters.');
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must be at least 2 characters long.');
       }
       return false;
     }
     if (nameVal.length > 50) {
       if (showError) {
-        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must be 50 characters or fewer.');
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must be at most 50 characters long.');
       }
       return false;
     }
     if (nameVal.startsWith('_') || nameVal.startsWith('.')) {
       if (showError) {
-        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', "Name can't start with _ or .");
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name cannot start with an underscore (_) or a period (.).');
       }
       return false;
     }
     if (!/[a-zA-Z0-9]/.test(nameVal)) {
       if (showError) {
-        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Name must contain at least one letter or number.');
+        setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', 'Habit name must contain at least one letter or number.');
       }
       return false;
     }
@@ -499,8 +578,8 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
   updateHabitSubmitState();
 
   nameInput.oninput = () => {
-    const hasErrorDisplayed = nameInput.classList.contains('error');
-    checkValidation(hasErrorDisplayed);
+    const hasError = nameInput.classList.contains('is-error');
+    checkValidation(hasError);
     updateHabitSubmitState();
   };
   nameInput.onblur = () => {
@@ -544,7 +623,7 @@ function openHabitModalForLive(mode, habit, identityId, triggerEl, onSuccess) {
       closeModal('habit-modal-overlay');
       if (onSuccess) onSuccess();
     } catch (err) {
-      alert(err.message || 'Failed to save habit.');
+      setFieldState(nameInput, 'error-habit-name', 'error-habit-name-text', 'icon-habit-name', err.message || 'Failed to save habit.');
     } finally {
       submitBtn.disabled = false;
       updateHabitSubmitState();
@@ -808,4 +887,323 @@ function renderAISuggestionContent(suggestion, contentEl) {
         `).join('')}
       </div>` : ''}
   `;
+}
+
+/* ============================================================
+   HABIT HISTORY PANEL — Vote Graph & Consistency Visualization
+   ============================================================ */
+
+let _historyPanelOpen = false;
+const _tooltip = () => document.getElementById('vg-tooltip');
+
+function openHabitHistory(habitId, habitName) {
+  const overlay = document.getElementById('history-overlay');
+  const body    = document.getElementById('history-body');
+  const skel    = document.getElementById('history-skeleton');
+  const titleEl = document.getElementById('history-panel-title');
+  const pill    = document.getElementById('history-trend-pill');
+  if (!overlay || !body) return;
+
+  // Reset to loading state
+  if (titleEl) titleEl.textContent = habitName;
+  if (pill)    { pill.textContent = ''; pill.className = 'trend-pill'; }
+  body.innerHTML = '';
+  body.appendChild(createSkeleton());
+
+  overlay.classList.add('is-open');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  _historyPanelOpen = true;
+
+  // Focus close button for a11y
+  setTimeout(() => document.getElementById('history-close-btn')?.focus(), 80);
+
+  // Wire close
+  const closeBtn = document.getElementById('history-close-btn');
+  const backdrop = document.getElementById('history-backdrop');
+  const handleClose = () => closeHistoryPanel();
+  closeBtn?.addEventListener('click', handleClose, { once: true });
+  backdrop?.addEventListener('click', handleClose, { once: true });
+
+  // Keyboard close
+  const escListener = (e) => { if (e.key === 'Escape' && _historyPanelOpen) closeHistoryPanel(); };
+  document.addEventListener('keydown', escListener, { once: true });
+
+  // Fetch and render
+  apiRequest(`/api/habits/${habitId}/history`, { method: 'GET' })
+    .then(res => {
+      const data = res?.data || res;
+      body.innerHTML = '';
+      renderHistoryPanel(body, data);
+    })
+    .catch(err => {
+      body.innerHTML = `
+        <div style="padding:var(--space-8); text-align:center;">
+          <p style="color:var(--error); font-size:0.9375rem; margin-bottom:var(--space-4);">
+            Could not load history. ${escapeHtml(err?.message || 'Please try again.')}
+          </p>
+          <button class="btn btn-ghost" onclick="openHabitHistory('${habitId}','${escapeHtml(habitName)}')">
+            Retry
+          </button>
+        </div>`;
+    });
+}
+
+function closeHistoryPanel() {
+  const overlay = document.getElementById('history-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('is-open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  _historyPanelOpen = false;
+  // Hide tooltip
+  const tip = _tooltip();
+  if (tip) tip.classList.remove('is-visible');
+}
+
+function createSkeleton() {
+  const sk = document.createElement('div');
+  sk.className = 'history-skeleton';
+  sk.innerHTML = '<div class="skel skel--row"></div><div class="skel skel--grid"></div><div class="skel skel--bars"></div>';
+  return sk;
+}
+
+function renderHistoryPanel(container, d) {
+  // Update header pill
+  const pill = document.getElementById('history-trend-pill');
+  if (pill) {
+    pill.textContent = d.trend || '';
+    pill.className = `trend-pill trend-pill--${(d.trend || 'stable').toLowerCase()}`;
+  }
+
+  // ── NMT alert ───────────────────────────────────────────────
+  if (d.nearNeverMissTwice) {
+    const nmt = document.createElement('div');
+    nmt.className = 'history-nmt-alert';
+    nmt.innerHTML = `
+      <span class="history-nmt-alert__icon" aria-hidden="true">⚡</span>
+      <p class="history-nmt-alert__text">
+        You missed yesterday. Cast today's vote to keep the momentum going.
+        Never miss twice — that's the only rule.
+      </p>`;
+    container.appendChild(nmt);
+  }
+
+  // ── Summary cards ────────────────────────────────────────────
+  const summaryRow = document.createElement('div');
+  summaryRow.className = 'history-summary-row';
+
+  const todayLabel = d.completedToday ? '✓ Voted' : 'Not yet';
+  const todayColor = d.completedToday ? 'var(--moss)' : 'var(--slate)';
+
+  const deltaSign  = d.currentConsistency >= d.previousConsistency ? '+' : '';
+  const delta      = d.currentConsistency - d.previousConsistency;
+  const deltaText  = d.previousConsistency > 0 ? `${deltaSign}${delta}% vs prev. month` : d.trendDescription;
+
+  const cards = [
+    {
+      modifier: 'today',
+      value: todayLabel,
+      label: 'Today',
+      sub: d.completedToday ? 'Vote cast ✓' : 'Vote pending',
+      valueStyle: `color:${todayColor};`
+    },
+    {
+      modifier: 'votes',
+      value: d.totalVotes,
+      label: 'Total Votes',
+      sub: `${d.monthlyVotes} this month`
+    },
+    {
+      modifier: 'consist',
+      value: `${d.currentConsistency}%`,
+      label: '30-Day',
+      sub: deltaText
+    },
+    {
+      modifier: 'window',
+      value: d.currentActiveWindow > 0 ? `${d.currentActiveWindow}d` : '—',
+      label: 'Current Run',
+      sub: `Best: ${d.longestActiveWindow}d`
+    }
+  ];
+
+  cards.forEach(({ modifier, value, label, sub, valueStyle }) => {
+    const card = document.createElement('div');
+    card.className = `history-stat-card history-stat-card--${modifier}`;
+    card.innerHTML = `
+      <span class="hsc__value" ${valueStyle ? `style="${valueStyle}"` : ''}>${escapeHtml(String(value))}</span>
+      <span class="hsc__label">${escapeHtml(label)}</span>
+      ${sub ? `<span class="hsc__sub">${escapeHtml(sub)}</span>` : ''}`;
+    summaryRow.appendChild(card);
+    // Animate bar-top accent with a tiny delay
+    requestAnimationFrame(() => setTimeout(() => card.classList.add('is-loaded'), 60));
+  });
+  container.appendChild(summaryRow);
+
+  // ── Vote Graph ───────────────────────────────────────────────
+  const graphSection = document.createElement('div');
+  const firstDow = d.firstCellDayOfWeek ?? 0; // 0=Sun
+
+  // Build month label row (one per week column based on 1st day of each week)
+  const numWeeks = Math.ceil((d.calendar?.length || 28) / 7);
+  const monthLabels = [];
+  for (let w = 0; w < numWeeks; w++) {
+    const firstCellOfWeek = d.calendar[w * 7];
+    monthLabels.push(firstCellOfWeek?.month ?? '');
+  }
+  // Only show month label when it changes
+  const monthLabelsCleaned = monthLabels.map((m, i) => i === 0 || m !== monthLabels[i - 1] ? m : '');
+
+  graphSection.innerHTML = `
+    <p class="history-section-title">Monthly Vote Graph</p>
+    <div class="vg-wrapper">
+      <div class="vg-month-row" aria-hidden="true">
+        ${monthLabelsCleaned.map(m => `<span class="vg-month-label">${m}</span>`).join('')}
+      </div>
+      <div class="vg-day-headers" aria-hidden="true">
+        <span class="vg-day-header">S</span>
+        <span class="vg-day-header">M</span>
+        <span class="vg-day-header">T</span>
+        <span class="vg-day-header">W</span>
+        <span class="vg-day-header">T</span>
+        <span class="vg-day-header">F</span>
+        <span class="vg-day-header">S</span>
+      </div>
+      <div class="vg-grid" role="grid" aria-label="Vote history calendar">
+        ${buildCalendarCells(d.calendar, d.firstCellDayOfWeek)}
+      </div>
+    </div>`;
+
+  container.appendChild(graphSection);
+
+  // Wire tooltip
+  initVoteGraphTooltip(graphSection.querySelector('.vg-grid'));
+
+  // ── Weekday pattern ──────────────────────────────────────────
+  const patternSection = document.createElement('div');
+  patternSection.innerHTML = `<p class="history-section-title">Weekly Pattern</p>`;
+
+  const patternGrid = document.createElement('div');
+  patternGrid.className = 'vg-pattern-grid';
+
+  d.weekdayStats.forEach(ws => {
+    const fillClass = ws.rate >= 70 ? 'vg-pattern-bar-fill--high'
+                    : ws.rate >= 40 ? 'vg-pattern-bar-fill--mid'
+                    : 'vg-pattern-bar-fill--low';
+    const isWeakest  = ws.day === d.weakestDay;
+    const isStrongest = ws.day === d.strongestDay;
+    const badge = isWeakest ? ' 🔻' : isStrongest ? ' ⭐' : '';
+    const row = document.createElement('div');
+    row.className = 'vg-pattern-row';
+    row.innerHTML = `
+      <span class="vg-pattern-day">${escapeHtml(ws.day)}${badge}</span>
+      <div class="vg-pattern-bar-track" role="progressbar" aria-valuenow="${ws.rate}" aria-valuemin="0" aria-valuemax="100" aria-label="${ws.day} completion rate">
+        <div class="vg-pattern-bar-fill ${fillClass}" data-rate="${ws.rate}" style="width:0%"></div>
+      </div>
+      <span class="vg-pattern-pct">${ws.totalCount > 0 ? ws.rate + '%' : '—'}</span>`;
+    patternGrid.appendChild(row);
+  });
+
+  patternSection.appendChild(patternGrid);
+  container.appendChild(patternSection);
+
+  // Animate bars after paint
+  requestAnimationFrame(() => {
+    patternGrid.querySelectorAll('.vg-pattern-bar-fill').forEach(fill => {
+      fill.style.width = fill.dataset.rate + '%';
+    });
+  });
+
+  // ── Insight card ─────────────────────────────────────────────
+  const insightText = buildInsightText(d);
+  if (insightText) {
+    const insight = document.createElement('div');
+    insight.className = 'history-insight';
+    insight.innerHTML = insightText;
+    container.appendChild(insight);
+  }
+}
+
+function buildCalendarCells(calendar, firstDayOfWeek) {
+  let html = '';
+  let isFirst = true;
+  calendar.forEach((cell, i) => {
+    let cssClass = 'vg-cell ';
+    if      (cell.status === 'completed' && cell.isToday) cssClass += 'vg-cell--today-voted';
+    else if (cell.status === 'completed')                 cssClass += 'vg-cell--completed';
+    else if (cell.status === 'missed')                    cssClass += 'vg-cell--missed';
+    else if (cell.status === 'today')                     cssClass += 'vg-cell--today-open';
+    else if (cell.status === 'future')                    cssClass += 'vg-cell--future';
+    else                                                  cssClass += 'vg-cell--pre-creation';
+
+    // Stagger animation delay per-cell
+    const delay = Math.min(i * 4, 400);
+    let styleStr = `animation-delay:${delay}ms`;
+
+    const statusLabel = cell.status === 'completed' ? 'Voted' : cell.status === 'missed' ? 'Missed' : cell.status === 'today' ? 'Today' : cell.status === 'future' ? 'Future' : '';
+
+    // First cell: offset to correct weekday column in the 7-col grid
+    if (isFirst && firstDayOfWeek > 0) {
+      styleStr += `; grid-column-start:${firstDayOfWeek + 1}`;
+      isFirst = false;
+    } else {
+      isFirst = false;
+    }
+
+    const attrs = [
+      `class="${cssClass.trim()}"`,
+      `data-date="${cell.date}"`,
+      `data-status="${statusLabel}"`,
+      `style="${styleStr}"`,
+      `role="gridcell"`,
+      `aria-label="${cell.date}: ${statusLabel}"`
+    ];
+    if (cell.note) attrs.push(`data-note="${escapeHtml(cell.note)}"`);
+
+    html += `<div ${attrs.join(' ')}></div>`;
+  });
+  return html;
+}
+
+function buildInsightText(d) {
+  const parts = [];
+  if (d.weakestDay && d.strongestDay && d.weakestDay !== d.strongestDay) {
+    parts.push(`<strong>${d.strongestDay}s</strong> are your strongest day. <strong>${d.weakestDay}s</strong> are your most common miss — try lowering the bar on ${d.weakestDay}s.`);
+  }
+  if (d.currentActiveWindow >= 3) {
+    parts.push(`You are on a <strong>${d.currentActiveWindow}-day run</strong> right now. Keep going.`);
+  }
+  if (d.longestActiveWindow > d.currentActiveWindow && d.longestActiveWindow >= 3) {
+    parts.push(`Your best run was <strong>${d.longestActiveWindow} consecutive days</strong>.`);
+  }
+  if (!d.completedToday) {
+    parts.push(`Cast today's vote to keep building your identity as someone who does this.`);
+  }
+  if (parts.length === 0) return null;
+  return parts.join(' ');
+}
+
+function initVoteGraphTooltip(grid) {
+  if (!grid) return;
+  const tip = _tooltip();
+  if (!tip) return;
+
+  const MONTH_FULL = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  grid.addEventListener('mousemove', (e) => {
+    const cell = e.target.closest('.vg-cell[data-date]');
+    if (!cell) { tip.classList.remove('is-visible'); return; }
+    const ds    = cell.dataset.date;       // YYYY-MM-DD
+    const parts = ds.split('-');
+    const d     = new Date(ds + 'T00:00:00Z');
+    const label = `${MONTH_FULL[d.getUTCMonth()]} ${d.getUTCDate()}, ${parts[0]} · ${cell.dataset.status || ''}`;
+    tip.textContent = label;
+    tip.classList.add('is-visible');
+    // Position above cursor
+    tip.style.left = (e.clientX - tip.offsetWidth / 2) + 'px';
+    tip.style.top  = (e.clientY - 36) + 'px';
+  });
+
+  grid.addEventListener('mouseleave', () => tip.classList.remove('is-visible'));
 }

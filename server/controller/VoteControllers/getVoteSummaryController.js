@@ -20,8 +20,8 @@ export const getVoteSummary = async (req, res) => {
     if (!validateObjectId(habitId, res, "habit")) return;
 
     try {
-        // delegate to the shared util — same logic, just accepts plain params instead of req
-        const summary = await getVoteSummaryForHabit(habitId, userId);
+        // delegate to the shared util — pass req.todayForUser from requireTimezone
+        const summary = await getVoteSummaryForHabit(habitId, userId, req.todayForUser);
 
         // util returns null if the habit wasn't found or doesn't belong to this user
         if (!summary) {

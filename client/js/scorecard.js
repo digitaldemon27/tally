@@ -43,6 +43,9 @@ let todayEntries = [];
 // 'today' or an ISO date string like '2026-07-28'.
 let currentViewDate = 'today';
 
+// User's account creation date, returned from /api/scorecard/today
+let userAccountCreatedAt = null;
+
 /* ============================================================
    API CALLS — one function per endpoint
    apiRequest is defined in api-client.js, loaded before this file.
@@ -57,8 +60,11 @@ async function fetchTodayEntries() {
   try {
     // apiRequest attaches Authorization and X-Timezone headers automatically.
     const data = await apiRequest('/scorecard/today');
-    // Backend returns: { success: true, entries: [...] }
+    // Backend returns: { success: true, entries: [...], accountCreatedAt: "..." }
     todayEntries = data.entries;
+    if (data.accountCreatedAt) {
+      userAccountCreatedAt = data.accountCreatedAt;
+    }
     currentViewDate = 'today';
     renderTodayEntries();
     updateSidebarActiveDate('today');
@@ -260,9 +266,6 @@ function buildEntryRow(entry, editable) {
           <button class="overflow-menu__item" role="menuitem" data-action="edit">Edit</button>
         </li>
         <li>
-          <button class="overflow-menu__item" role="menuitem" data-action="select">Select</button>
-        </li>
-        <li>
           <button class="overflow-menu__item overflow-menu__item--danger" role="menuitem" data-action="delete">Delete</button>
         </li>
       </ul>
@@ -279,7 +282,7 @@ function buildEntryRow(entry, editable) {
       openEntryModal('edit', entry);
     });
 
-    menu.querySelector('[data-action="select"]').addEventListener('click', () => {
+    menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
       closeAllOverflowMenus();
       const container = document.getElementById('entry-list');
       if (container) {
@@ -292,11 +295,25 @@ function buildEntryRow(entry, editable) {
       }
     });
 
-    menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
-      closeAllOverflowMenus();
-      openConfirmDeleteEntry(entry._id, entry.note);
-    });
   }
+
+  // Allow clicking anywhere on the row to toggle selection (when in selection mode)
+  li.addEventListener('click', (e) => {
+    const container = document.getElementById('entry-list');
+    if (!container || !container.classList.contains('selection-mode')) return;
+
+    // Don't double-trigger if they actually clicked the checkbox itself
+    if (e.target.classList.contains('js-entry-select')) return;
+
+    // Ignore clicks on overflow menu buttons (just in case they are visible)
+    if (e.target.closest('.overflow-menu')) return;
+
+    const cb = li.querySelector('.js-entry-select');
+    if (cb) {
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
 
   return li;
 }
@@ -352,6 +369,16 @@ function wireCalendarControls() {
       renderCalendar();
     });
   }
+
+  const todayBtn = document.getElementById('cal-go-today');
+  if (todayBtn) {
+    todayBtn.addEventListener('click', () => {
+      // Go to today's date in calendar and fetch entries
+      calendarYear = new Date().getFullYear();
+      calendarMonth = new Date().getMonth();
+      fetchTodayEntries();
+    });
+  }
 }
 
 function renderCalendar() {
@@ -384,6 +411,14 @@ function renderCalendar() {
     const dObj = new Date(calendarYear, calendarMonth, day);
     const dateStr = toISODateString(dObj);
     const isFuture = dObj > today;
+    
+    let isBeforeCreation = false;
+    if (userAccountCreatedAt) {
+      const createdDateStr = toISODateString(new Date(userAccountCreatedAt));
+      if (dateStr < createdDateStr) {
+        isBeforeCreation = true;
+      }
+    }
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -405,10 +440,14 @@ function renderCalendar() {
     btn.style.justifyContent = 'center';
     btn.style.transition = 'background 0.2s, color 0.2s';
 
-    if (isFuture) {
+    if (isFuture || isBeforeCreation) {
       btn.style.opacity = '0.25';
       btn.style.cursor = 'not-allowed';
       btn.disabled = true;
+      if (isBeforeCreation) {
+         // optional: add a title to explain why it's disabled
+         btn.title = "Before account creation";
+      }
     } else {
       if (dateStr === todayStr) {
         btn.style.border = '1.5px solid var(--moss)';
@@ -502,7 +541,7 @@ function openEntryModal(mode, entry = null) {
     const radio = document.querySelector('input[name="entry-label"][value="positive"]');
     if (radio) radio.checked = true;
 
-    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) submitBtn.disabled = false;
   }
 
   // Open the shared modal — defined in main.js
@@ -522,12 +561,7 @@ function wireEntryModal() {
   // Close button
   if (closeBtn) closeBtn.addEventListener('click', () => closeModal('entry-modal-overlay'));
 
-  // Enable submit only when note is non-empty
-  if (noteInput) {
-    noteInput.addEventListener('input', () => {
-      submitBtn.disabled = noteInput.value.trim().length === 0;
-    });
-  }
+  // Removed: Don't disable submit on empty input, allow user to click so they see the error message.
 
   // Form submit
   if (form) {

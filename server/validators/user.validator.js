@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { usernameRegex, gmailRegex } from "./signupValidator.js";
+import { usernameRegex, emailRegex } from "./signupValidator.js";
 
 /**
  * Zod schema for validating user input during Registration / Creation.
@@ -20,16 +20,9 @@ export const userRegisterValidator = z.object({
     }),
   email: z
     .string({ required_error: "Email is required" })
-    .transform((val) => {
-      let emailVal = val.trim().toLowerCase();
-      // If there is no '@' (no extension/domain), add '@gmail.com' by default
-      if (!emailVal.includes("@")) {
-        emailVal = `${emailVal}@gmail.com`;
-      }
-      return emailVal;
-    })
-    .refine((val) => gmailRegex.test(val), {
-      message: "Please enter a valid Gmail address (6-30 characters, no consecutive periods, cannot start or end with a period).",
+    .transform((val) => val.trim().toLowerCase())
+    .refine((val) => emailRegex.test(val), {
+      message: "Please enter a valid email address.",
     }),
   password: z
     .string({ required_error: "Password is required" })

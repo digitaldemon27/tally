@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const usernameRegex = /^(?=.{3,30}$)[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
-export const gmailRegex = /^(?=.{6,30}@gmail\.com$)(?!\.)(?!.*\.\.)(?!.*\.@)[A-Za-z0-9.]+@gmail\.com$/;
+export const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+export const gmailRegex = emailRegex;
 
 /**
  * Zod validation schema for user signup.
@@ -19,7 +20,7 @@ export const signupSchema = z.object({
   email: z
     .string({ required_error: "Email is required" })
     .transform((val) => val.trim().toLowerCase())
-    .refine((val) => gmailRegex.test(val), {
-      message: "Please enter a valid Gmail address (6-30 characters, no consecutive periods, cannot start or end with a period).",
+    .refine((val) => emailRegex.test(val), {
+      message: "Please enter a valid email address.",
     }),
 });
